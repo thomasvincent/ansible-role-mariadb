@@ -2,19 +2,20 @@
 # Handlers for MariaDB role
 
 - name: restart mariadb
-  service:
+  ansible.builtin.service:
     name: "{{ mariadb_service_name }}"
     state: restarted
   listen: "restart mariadb"
 
 - name: reload mariadb
-  service:
+  ansible.builtin.service:
     name: "{{ mariadb_service_name }}"
     state: reloaded
   listen: "reload mariadb"
 
 - name: restart mysql exporter
-  systemd:
+  ansible.builtin.systemd:
     name: mysqld_exporter
     state: restarted
+    daemon_reload: yes
   listen: "restart mysql exporter"

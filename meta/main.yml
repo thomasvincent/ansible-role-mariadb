@@ -1,7 +1,8 @@
 ---
 galaxy_info:
   role_name: mariadb
-  author: Enterprise Ops Team
+  namespace: thomasvincent
+  author: Thomas Vincent
   description: Enterprise-grade Ansible role for MariaDB/MySQL database management
   company: Enterprise Inc.
   license: MIT
@@ -28,7 +29,6 @@ galaxy_info:
     - mysql
     - rdbms
     - sql
-    - db
     - enterprise
     - security
     - high-availability

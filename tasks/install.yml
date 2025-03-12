@@ -2,7 +2,7 @@
 # Tasks for installing MariaDB
 
 - name: Ensure prerequisite packages are installed
-  package:
+  ansible.builtin.package:
     name: "{{ mariadb_prerequisite_packages }}"
     state: present
   register: package_result
@@ -11,33 +11,33 @@
   delay: 5
 
 - name: Configure MariaDB repository
+  when: mariadb_configure_repo | bool
   block:
     - name: Add MariaDB APT key (Debian family)
-      apt_key:
+      when: ansible_os_family == 'Debian'
+      ansible.builtin.apt_key:
         keyserver: "{{ mariadb_repo_keyserver }}"
         id: "{{ mariadb_repo_key }}"
-      when: ansible_os_family == 'Debian'
 
     - name: Add MariaDB APT repository (Debian family)
-      apt_repository:
+      when: ansible_os_family == 'Debian'
+      ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://mirror.23media.com/mariadb/repo/{{ mariadb_repo_version }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} main"
         filename: mariadb
         state: present
-      when: ansible_os_family == 'Debian'
 
     - name: Add MariaDB YUM repository (RedHat family)
-      yum_repository:
+      when: ansible_os_family == 'RedHat'
+      ansible.builtin.yum_repository:
         name: mariadb
-        description: MariaDB {{ mariadb_repo_version }} repository
+        description: "MariaDB {{ mariadb_repo_version }} repository"
         baseurl: "https://yum.mariadb.org/{{ mariadb_repo_version }}/{{ ansible_distribution | lower }}{{ ansible_distribution_major_version }}-amd64"
         gpgkey: "https://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
         gpgcheck: yes
         state: present
-      when: ansible_os_family == 'RedHat'
-  when: mariadb_configure_repo | bool
 
 - name: Install MariaDB packages
-  package:
+  ansible.builtin.package:
     name: "{{ mariadb_packages + mariadb_additional_packages }}"
     state: present
     update_cache: yes
@@ -47,20 +47,21 @@
   delay: 5
 
 - name: Ensure MariaDB directories exist with correct permissions
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: mysql
     group: mysql
     mode: '0755'
-  with_items:
-    - "{{ mariadb_data_dir }}"
-    - "{{ mariadb_log_dir }}"
-    - "{{ mariadb_backup_dir }}"
-  when: item != ""
+  loop: "{{ mariadb_directories | select() | list }}"
+  vars:
+    mariadb_directories:
+      - "{{ mariadb_data_dir }}"
+      - "{{ mariadb_log_dir }}"
+      - "{{ mariadb_backup_dir if mariadb_backup_enabled else '' }}"
 
 - name: Ensure MariaDB service is started and enabled
-  service:
+  ansible.builtin.service:
     name: "{{ mariadb_service_name }}"
     state: "{{ mariadb_service_state }}"
     enabled: "{{ mariadb_service_enabled }}"
