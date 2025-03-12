@@ -2,53 +2,58 @@
 # Main task orchestration for MariaDB role
 
 - name: Include OS-specific variables
-  include_vars: "{{ item }}"
-  with_first_found:
-    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
-    - "{{ ansible_os_family }}.yml"
-    - "main.yml"
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
+        - "main.yml"
+      paths:
+        - "{{ role_path }}/vars"
   tags: [always]
 
 - name: Validate required variables
-  include_tasks: validate.yml
+  ansible.builtin.import_tasks: validate.yml
   tags: [validate, always]
 
-- name: Ensure MariaDB is installed
-  include_tasks: install.yml
+- name: Setup MariaDB
   when: mariadb_enabled | bool
-  tags: [mariadb, install]
+  block:
+    - name: Install MariaDB
+      ansible.builtin.import_tasks: install.yml
+      tags: [mariadb, install]
 
-- name: Configure MariaDB server
-  include_tasks: configure.yml
-  when: mariadb_enabled | bool
-  tags: [mariadb, configure]
+    - name: Configure MariaDB server
+      ansible.builtin.import_tasks: configure.yml
+      tags: [mariadb, configure]
 
-- name: Secure MariaDB installation
-  include_tasks: secure.yml
-  when: mariadb_enabled | bool and mariadb_secure_installation | bool
-  tags: [mariadb, secure]
+    - name: Secure MariaDB installation
+      ansible.builtin.import_tasks: secure.yml
+      when: mariadb_secure_installation | bool
+      tags: [mariadb, secure]
 
-- name: Configure MariaDB users
-  include_tasks: users.yml
-  when: mariadb_enabled | bool and mariadb_users | length > 0
-  tags: [mariadb, users]
+    - name: Configure MariaDB users
+      ansible.builtin.import_tasks: users.yml
+      when: mariadb_users | length > 0
+      tags: [mariadb, users]
 
-- name: Configure MariaDB databases
-  include_tasks: databases.yml
-  when: mariadb_enabled | bool and mariadb_databases | length > 0
-  tags: [mariadb, databases]
+    - name: Configure MariaDB databases
+      ansible.builtin.import_tasks: databases.yml
+      when: mariadb_databases | length > 0
+      tags: [mariadb, databases]
 
-- name: Configure MariaDB replication
-  include_tasks: replication.yml
-  when: mariadb_enabled | bool and mariadb_replication_enabled | bool
-  tags: [mariadb, replication]
+    - name: Configure MariaDB replication
+      ansible.builtin.import_tasks: replication.yml
+      when: mariadb_replication_enabled | bool
+      tags: [mariadb, replication]
 
-- name: Configure MariaDB backups
-  include_tasks: backup.yml
-  when: mariadb_enabled | bool and mariadb_backup_enabled | bool
-  tags: [mariadb, backup]
+    - name: Configure MariaDB backups
+      ansible.builtin.import_tasks: backup.yml
+      when: mariadb_backup_enabled | bool
+      tags: [mariadb, backup]
 
-- name: Configure MariaDB monitoring
-  include_tasks: monitoring.yml
-  when: mariadb_enabled | bool and mariadb_monitoring_enabled | bool
-  tags: [mariadb, monitoring]
+    - name: Configure MariaDB monitoring
+      ansible.builtin.import_tasks: monitoring.yml
+      when: mariadb_monitoring_enabled | bool
+      tags: [mariadb, monitoring]
