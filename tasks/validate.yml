@@ -14,21 +14,25 @@
   assert:
     that:
       - not (mariadb_secure_installation | bool) or mariadb_root_password != ""
-    fail_msg: "A root password must be set when mariadb_secure_installation is enabled"
+    fail_msg: "A root password must be set when mariadb_secure_installation is
+      enabled"
   tags: [mariadb, validate, security]
 
 - name: Validate replication configuration
   assert:
     that:
-      - not (mariadb_replication_enabled | bool) or mariadb_replication_role in ['master', 'slave', 'none']
-      - not (mariadb_replication_enabled | bool and mariadb_replication_role == 'slave') or mariadb_replication_master_host != ""
-      - not (mariadb_replication_enabled | bool) or mariadb_replication_password != ""
+      - not (mariadb_replication_enabled | bool) or mariadb_replication_role in
+        ['master', 'slave', 'none']
+      - not (mariadb_replication_enabled | bool and mariadb_replication_role ==
+        'slave') or mariadb_replication_master_host != ""
+      - not (mariadb_replication_enabled | bool) or
+        mariadb_replication_password != ""
     fail_msg: "Invalid replication configuration"
   when: mariadb_replication_enabled | bool
   tags: [mariadb, validate, replication]
   Here's the rest of the shell commands to populate the repository:
 
-```bash
+bash
 # Create validate.yml (continued)
 cat > tasks/validate.yml << 'EOF'
 ---
@@ -47,15 +51,19 @@ cat > tasks/validate.yml << 'EOF'
   assert:
     that:
       - not (mariadb_secure_installation | bool) or mariadb_root_password != ""
-    fail_msg: "A root password must be set when mariadb_secure_installation is enabled"
+    fail_msg: "A root password must be set when mariadb_secure_installation is
+      enabled"
   tags: [mariadb, validate, security]
 
 - name: Validate replication configuration
   assert:
     that:
-      - not (mariadb_replication_enabled | bool) or mariadb_replication_role in ['master', 'slave', 'none']
-      - not (mariadb_replication_enabled | bool and mariadb_replication_role == 'slave') or mariadb_replication_master_host != ""
-      - not (mariadb_replication_enabled | bool) or mariadb_replication_password != ""
+      - not (mariadb_replication_enabled | bool) or mariadb_replication_role in
+        ['master', 'slave', 'none']
+      - not (mariadb_replication_enabled | bool and mariadb_replication_role ==
+        'slave') or mariadb_replication_master_host != ""
+      - not (mariadb_replication_enabled | bool) or
+        mariadb_replication_password != ""
     fail_msg: "Invalid replication configuration"
   when: mariadb_replication_enabled | bool
   tags: [mariadb, validate, replication]
@@ -64,8 +72,10 @@ cat > tasks/validate.yml << 'EOF'
   assert:
     that:
       - not (mariadb_backup_enabled | bool) or mariadb_backup_dir != ""
-      - not (mariadb_backup_enabled | bool) or mariadb_backup_frequency in ['hourly', 'daily', 'weekly']
-      - not (mariadb_backup_enabled | bool) or mariadb_backup_retention | int > 0
+      - not (mariadb_backup_enabled | bool) or mariadb_backup_frequency in
+        ['hourly', 'daily', 'weekly']
+      - not (mariadb_backup_enabled | bool) or mariadb_backup_retention | int >
+        0
     fail_msg: "Invalid backup configuration"
   when: mariadb_backup_enabled | bool
   tags: [mariadb, validate, backup]
@@ -74,9 +84,11 @@ cat > tasks/validate.yml << 'EOF'
   assert:
     that:
       - not (mariadb_monitoring_enabled | bool) or mariadb_monitoring_user != ""
-      - not (mariadb_monitoring_enabled | bool) or mariadb_monitoring_password != ""
+      - not (mariadb_monitoring_enabled | bool) or mariadb_monitoring_password
+        != ""
       - not (mariadb_exporter_enabled | bool) or mariadb_exporter_port | int > 0
-      - not (mariadb_exporter_enabled | bool) or mariadb_exporter_port | int < 65536
+      - not (mariadb_exporter_enabled | bool) or mariadb_exporter_port | int <
+        65536
     fail_msg: "Invalid monitoring configuration"
   when: mariadb_monitoring_enabled | bool
   tags: [mariadb, validate, monitoring]
@@ -84,8 +96,10 @@ cat > tasks/validate.yml << 'EOF'
 - name: Validate TLS configuration
   assert:
     that:
-      - not (mariadb_tls_enabled | bool) or (mariadb_tls_cert_file != "" and mariadb_tls_key_file != "")
-    fail_msg: "TLS certificate and key files must be specified when TLS is enabled"
+      - not (mariadb_tls_enabled | bool) or (mariadb_tls_cert_file != "" and
+        mariadb_tls_key_file != "")
+    fail_msg: "TLS certificate and key files must be specified when TLS is
+      enabled"
   when: mariadb_tls_enabled | bool
   tags: [mariadb, validate, security]
 
@@ -94,14 +108,16 @@ cat > tasks/validate.yml << 'EOF'
     - name: Check for duplicate database names
       assert:
         that:
-          - mariadb_databases | map(attribute='name') | list | length == mariadb_databases | map(attribute='name') | unique | list | length
+          - mariadb_databases | map(attribute='name') | list | length ==
+            mariadb_databases | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate database names detected in mariadb_databases"
       when: mariadb_databases | length > 0
-      
+
     - name: Check for duplicate user names
       assert:
         that:
-          - mariadb_users | map(attribute='name') | list | length == mariadb_users | map(attribute='name') | unique | list | length
+          - mariadb_users | map(attribute='name') | list | length ==
+            mariadb_users | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate user names detected in mariadb_users"
       when: mariadb_users | length > 0
   tags: [mariadb, validate, databases, users]

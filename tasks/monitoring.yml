@@ -7,8 +7,8 @@
     password: "{{ mariadb_monitoring_password }}"
     host: "{{ mariadb_monitoring_host }}"
     priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
-    state: present
-    login_user: root
+    state: presen
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   no_log: true
   when: mariadb_monitoring_enabled | bool
@@ -18,34 +18,39 @@
   block:
     - name: Download MySQL exporter
       get_url:
-        url: "https://github.com/prometheus/mysqld_exporter/releases/download/v{{ mariadb_exporter_version }}/mysqld_exporter-{{ mariadb_exporter_version }}.linux-amd64.tar.gz"
-        dest: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-amd64.tar.gz"
+        url: "https://github.com/prometheus/mysqld_exporter/releases/download/v{
+          { mariadb_exporter_version }}/mysqld_exporter-{{
+            mariadb_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-
+          amd64.tar.gz"
         mode: '0644'
       register: mysqld_exporter_download
 
     - name: Extract MySQL exporter
       unarchive:
-        src: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-amd64.tar.gz"
+        src: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-
+          amd64.tar.gz"
         dest: "/tmp"
-        remote_src: yes
+        remote_src: true
       when: mysqld_exporter_download.changed
 
     - name: Move MySQL exporter binary to /usr/local/bin
       copy:
-        src: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-amd64/mysqld_exporter"
+        src: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-
+          amd64/mysqld_exporter"
         dest: "/usr/local/bin/mysqld_exporter"
         mode: '0755'
-        remote_src: yes
+        remote_src: true
       when: mysqld_exporter_download.changed
 
     - name: Create system user for MySQL exporter
       user:
         name: mysql-exporter
         shell: /bin/false
-        system: yes
-        home: /nonexistent
-        create_home: no
-        state: present
+        system: true
+        home: /nonexisten
+        create_home: false
+        state: presen
 
     - name: Create MySQL exporter configuration
       template:
@@ -69,8 +74,8 @@
       template:
         src: mysqld_exporter.service.j2
         dest: /etc/systemd/system/mysqld_exporter.service
-        owner: root
-        group: root
+        owner: roo
+        group: roo
         mode: '0644'
       notify: restart mysql exporter
 
@@ -78,25 +83,26 @@
       systemd:
         name: mysqld_exporter
         state: started
-        enabled: yes
-        daemon_reload: yes
+        enabled: true
+        daemon_reload: true
   when: mariadb_exporter_enabled | bool
   tags: [mariadb, monitoring, prometheus]
 
-- name: Install MariaDB status check script
+- name: Install MariaDB status check scrip
   template:
     src: mariadb_monitoring.sh.j2
     dest: /usr/local/bin/mariadb_monitoring.sh
     mode: '0755'
-    owner: root
-    group: root
+    owner: roo
+    group: roo
   tags: [mariadb, monitoring]
 
 - name: Configure monitoring check cron job
   cron:
     name: "MariaDB monitoring check"
-    job: "/usr/local/bin/mariadb_monitoring.sh > /var/log/mariadb_monitoring.log 2>&1"
-    user: root
+    job: "/usr/local/bin/mariadb_monitoring.sh >
+      /var/log/mariadb_monitoring.log 2>&1"
+    user: roo
     minute: "*/5"
-    state: present
+    state: presen
   tags: [mariadb, monitoring, cron]

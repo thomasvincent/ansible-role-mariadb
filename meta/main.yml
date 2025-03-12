@@ -1,9 +1,10 @@
 ---
 galaxy_info:
   role_name: mariadb
-  namespace: thomasvincent
-  author: Thomas Vincent
-  description: Enterprise-grade Ansible role for MariaDB/MySQL database management
+  namespace: thomasvincen
+  author: Thomas Vincen
+  description: Enterprise-grade Ansible role for MariaDB/MySQL database
+    managemen
   company: Enterprise Inc.
   license: MIT
   min_ansible_version: 2.10
