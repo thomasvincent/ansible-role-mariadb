@@ -1,7 +1,9 @@
 ---
 ---
+---
 name: CI
 
+# GitHub Actions workflow trigger
 on:
   push:
     branches: [main]
