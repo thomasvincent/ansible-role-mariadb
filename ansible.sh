@@ -1,165 +1,148 @@
 #!/bin/bash
 set -e
 
-# Create a .yamllint file to customize rules
-cat > .yamllint << 'EOF'
----
-extends: default
+echo "Fixing final YAML linting issues..."
 
-rules:
-  line-length:
-    max: 80
-    level: error
-  trailing-spaces:
-    level: error
-  truthy:
-    allowed-values: ['true', 'false']
-    level: error
-  braces:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
-    level: error
-  brackets:
-    min-spaces-inside: 0
-    max-spaces-inside: 0
-    level: error
-  document-start:
-    present: true
-    level: error
+# Fix trailing spaces in replication.yml
+if [[ -f "tasks/replication.yml" ]]; then
+  # Remove trailing spaces on line 26
+  sed -i '' 's/[ \t]*$//' tasks/replication.yml
+  echo "Fixed trailing spaces in replication.yml"
+fi
+
+# Replace validate.yml entirely to fix syntax
+if [[ -f "tasks/validate.yml" ]]; then
+  cat > tasks/validate.yml << 'EOF'
+---
+# Tasks for validating role configuration
+
+- name: Validate required configurations
+  ansible.builtin.assert:
+    that:
+      - mariadb_version is defined
+      - mariadb_port | int > 0
+      - mariadb_port | int < 65536
+    fail_msg: "Missing or invalid required configuration parameters"
+  tags: [mariadb, validate]
+
+- name: Ensure root password is set if secure installation enabled
+  ansible.builtin.assert:
+    that:
+      - not (mariadb_secure_installation | bool) or mariadb_root_password != ""
+    fail_msg: >-
+      A root password must be set when mariadb_secure_installation is enabled
+  tags: [mariadb, validate, security]
+
+- name: Validate replication configuration
+  ansible.builtin.assert:
+    that:
+      - >-
+        not (mariadb_replication_enabled | bool) or 
+        mariadb_replication_role in ['master', 'slave', 'none']
+      - >-
+        not (mariadb_replication_enabled | bool and 
+        mariadb_replication_role == 'slave') or mariadb_replication_master_host != ""
+      - >-
+        not (mariadb_replication_enabled | bool) or 
+        mariadb_replication_password != ""
+    fail_msg: "Invalid replication configuration"
+  when: mariadb_replication_enabled | bool
+  tags: [mariadb, validate, replication]
+
+- name: Validate backup configuration
+  ansible.builtin.assert:
+    that:
+      - not (mariadb_backup_enabled | bool) or mariadb_backup_dir != ""
+      - >-
+        not (mariadb_backup_enabled | bool) or 
+        mariadb_backup_frequency in ['hourly', 'daily', 'weekly']
+      - not (mariadb_backup_enabled | bool) or mariadb_backup_retention | int > 0
+    fail_msg: "Invalid backup configuration"
+  when: mariadb_backup_enabled | bool
+  tags: [mariadb, validate, backup]
+
+- name: Validate monitoring configuration
+  ansible.builtin.assert:
+    that:
+      - not (mariadb_monitoring_enabled | bool) or mariadb_monitoring_user != ""
+      - >-
+        not (mariadb_monitoring_enabled | bool) or 
+        mariadb_monitoring_password != ""
+      - not (mariadb_exporter_enabled | bool) or mariadb_exporter_port | int > 0
+      - >-
+        not (mariadb_exporter_enabled | bool) or 
+        mariadb_exporter_port | int < 65536
+    fail_msg: "Invalid monitoring configuration"
+  when: mariadb_monitoring_enabled | bool
+  tags: [mariadb, validate, monitoring]
+
+- name: Validate TLS configuration
+  ansible.builtin.assert:
+    that:
+      - >-
+        not (mariadb_tls_enabled | bool) or 
+        (mariadb_tls_cert_file != "" and mariadb_tls_key_file != "")
+    fail_msg: >-
+      TLS certificate and key files must be specified when TLS is enabled
+  when: mariadb_tls_enabled | bool
+  tags: [mariadb, validate, security]
+
+- name: Validate users and databases
+  block:
+    - name: Check for duplicate database names
+      ansible.builtin.assert:
+        that:
+          - >-
+            mariadb_databases | map(attribute='name') | list | length == 
+            mariadb_databases | map(attribute='name') | unique | list | length
+        fail_msg: "Duplicate database names detected in mariadb_databases"
+      when: mariadb_databases | length > 0
+      
+    - name: Check for duplicate user names
+      ansible.builtin.assert:
+        that:
+          - >-
+            mariadb_users | map(attribute='name') | list | length == 
+            mariadb_users | map(attribute='name') | unique | list | length
+        fail_msg: "Duplicate user names detected in mariadb_users"
+      when: mariadb_users | length > 0
+  tags: [mariadb, validate, databases, users]
+
+- name: Validate performance settings
+  ansible.builtin.assert:
+    that:
+      - mariadb_max_connections | int > 0
+      - mariadb_thread_cache_size | int > 0
+    fail_msg: "Invalid performance settings"
+  tags: [mariadb, validate, performance]
+EOF
+  echo "Fixed syntax in validate.yml"
+fi
+
+# Fix GitHub Actions workflow files
+for file in .github/workflows/release.yml .github/workflows/ci.yml; do
+  if [[ -f "$file" ]]; then
+    # Create a correctly formatted version with 'on:' keyword preserved
+    # First extract the existing content
+    content=$(cat "$file")
+    
+    # Create a new file with fixed header and original content
+    cat > "${file}.tmp" << 'EOF'
+---
 EOF
 
-echo "Created .yamllint configuration file"
-
-# Fix document start in GitHub workflow files - macOS compatible
-for file in .github/dependabot.yml .github/workflows/ci.yml .github/workflows/release.yml; do
-  if [[ -f "$file" ]]; then
-    # macOS compatible version
-    sed -i '' '1i\
----
-' "$file"
-    echo "Added document start marker to $file"
-  fi
-done
-
-# Fix truthy values - macOS compatible
-echo "Fixing truthy values..."
-find . -name "*.yml" -exec sed -i '' 's/: yes$/: true/g' {} \;
-find . -name "*.yml" -exec sed -i '' 's/: no$/: false/g' {} \;
-find . -name "*.yml" -exec sed -i '' 's/: Yes$/: true/g' {} \;
-find . -name "*.yml" -exec sed -i '' 's/: No$/: false/g' {} \;
-
-# Fix bracket spacing in CI.yml - macOS compatible
-if [[ -f ".github/workflows/ci.yml" ]]; then
-  sed -i '' 's/\[ main \]/[main]/g' .github/workflows/ci.yml
-  sed -i '' 's/\[ pull_request \]/[pull_request]/g' .github/workflows/ci.yml
-  echo "Fixed bracket spacing in ci.yml"
-fi
-
-# Fix trailing spaces - macOS compatible
-echo "Removing trailing whitespace..."
-find . -name "*.yml" -exec sed -i '' 's/[ \t]*$//' {} \;
-
-# Fix braces in replication.yml - macOS compatible
-if [[ -f "tasks/replication.yml" ]]; then
-  sed -i '' 's/{ *variable: */{ variable: /g' tasks/replication.yml
-  sed -i '' 's/ *value: */value: /g' tasks/replication.yml
-  echo "Fixed brace spacing in replication.yml"
-fi
-
-# Fix the syntax error in validate.yml - macOS compatible
-if [[ -f "tasks/validate.yml" ]]; then
-  # Remove any backtick characters on line 31
-  sed -i '' '31s/`//g' tasks/validate.yml
-  echo "Fixed syntax error in validate.yml"
-fi
-
-# Create a Python script to fix line length issues
-cat > fix_line_length.py << 'EOFPYTHON'
-#!/usr/bin/env python3
-import os
-import re
-
-files_with_issues = [
-    "defaults/main.yml",
-    "meta/main.yml",
-    "tasks/configure.yml",
-    "tasks/replication.yml",
-    "tasks/users.yml",
-    "tasks/main.yml",
-    "tasks/validate.yml",
-    "tasks/monitoring.yml",
-    "tasks/install.yml",
-    "tasks/backup.yml",
-    "molecule/default/verify.yml",
-    ".github/workflows/ci.yml"
-]
-
-def wrap_line(line, max_length=80):
-    if len(line.rstrip()) <= max_length:
-        return line
+    # Use awk to properly handle the 'on:' keyword
+    echo "$content" | awk '{
+      if ($0 ~ /^on:/) {
+        print "# GitHub Actions workflow trigger"; 
+        print "on:";
+      } else {
+        print;
+      }
+    }' >> "${file}.tmp"
     
-    # Find a good breaking point
-    indent_match = re.match(r'^(\s*)', line)
-    indent = indent_match.group(1) if indent_match else ""
-    extra_indent = "  "  # Additional indent for wrapped lines
-    
-    # Try breaking at commas, spaces, or other good break points
-    for i in range(max_length - 1, 30, -1):
-        if i < len(line) and line[i] in [' ', ',', ':', '-']:
-            return line[:i+1].rstrip() + "\n" + indent + extra_indent + line[i+1:].lstrip()
-    
-    # If no good break point found, just break at max_length
-    if len(line) > max_length:
-        return line[:max_length].rstrip() + "\n" + indent + extra_indent + line[max_length:].lstrip()
-    return line
-
-for file_path in files_with_issues:
-    if not os.path.exists(file_path):
-        print(f"File not found: {file_path}")
-        continue
-        
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    
-    fixed_lines = []
-    for line in lines:
-        if len(line.rstrip()) > 80:
-            fixed_line = wrap_line(line)
-            # If line still too long, try again
-            while any(len(l.rstrip()) > 80 for l in fixed_line.split('\n')):
-                fixed_line = "\n".join([
-                    wrap_line(l) if len(l.rstrip()) > 80 else l 
-                    for l in fixed_line.split('\n')
-                ])
-            fixed_lines.append(fixed_line)
-        else:
-            fixed_lines.append(line)
-    
-    with open(file_path, 'w') as file:
-        file.writelines(fixed_lines)
-    
-    print(f"Fixed line length issues in {file_path}")
-EOFPYTHON
-
-chmod +x fix_line_length.py
-echo "Running line length fixer..."
-python3 ./fix_line_length.py
-
-# Clean up the script after running
-rm fix_line_length.py
-
-# Alternative approach for adding document start markers (file by file approach for macOS)
-for file in .github/dependabot.yml .github/workflows/ci.yml .github/workflows/release.yml; do
-  if [[ -f "$file" ]]; then
-    # Check if the file already starts with ---
-    if ! grep -q "^---" "$file"; then
-      # Create a temporary file with --- at the start
-      echo "---" > temp_file
-      cat "$file" >> temp_file
-      # Replace the original file
-      mv temp_file "$file"
-      echo "Added document start marker to $file (alternative method)"
-    fi
+    mv "${file}.tmp" "$file"
+    echo "Fixed GitHub Actions workflow in $file"
   fi
 done
 
@@ -179,16 +162,12 @@ git config user.email "thomasvincent@gmail.com"
 git add .
 
 # Create a conventional commit
-git commit -m "style: fix YAML linting issues
+git commit -m "style: fix final YAML linting issues
 
-- Fixed line length issues
-- Standardized truthy values (yes/no → true/false)
-- Removed trailing whitespace
-- Fixed bracket and brace spacing
-- Added missing document start markers
-- Fixed syntax errors
+- Fixed trailing spaces in replication.yml
+- Replaced validate.yml with properly formatted syntax
+- Fixed GitHub Actions workflow files to handle 'on:' keyword correctly
 
-This commit follows Ansible best practices and makes the codebase
-more idiomatic."
+This commit addresses the remaining linting issues."
 
 echo "Changes committed successfully"

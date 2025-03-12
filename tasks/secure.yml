@@ -64,7 +64,7 @@
     login_user: roo
     login_password: "{{ mariadb_root_password }}"
     query: "INSTALL PLUGIN validate_password SONAME 'validate_password.so';"
-  ignore_errors: yes  # Plugin may already be installed
+  ignore_errors: true  # Plugin may already be installed
   no_log: true
 
 - name: Set password validation policy
@@ -72,5 +72,5 @@
     login_user: roo
     login_password: "{{ mariadb_root_password }}"
     query: "SET GLOBAL validate_password_policy = 'STRONG';"
-  ignore_errors: yes  # Plugin may not be installed
+  ignore_errors: true  # Plugin may not be installed
   no_log: true
