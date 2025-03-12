@@ -1,7 +1,9 @@
 ---
 ---
+---
 name: Release
 
+# GitHub Actions workflow trigger
 on:
   push:
     tags:
