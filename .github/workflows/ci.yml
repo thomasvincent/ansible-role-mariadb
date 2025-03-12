@@ -1,9 +1,7 @@
 ---
----
----
 name: CI
 
-# GitHub Actions workflow trigger
+# GitHub Actions workflow trigger definition
 on:
   push:
     branches: [main]
@@ -14,31 +12,31 @@ on:
 
 jobs:
   lint:
-    name: Lin
-    runs-on: ubuntu-lates
+    name: Lint
+    runs-on: ubuntu-latest
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ansible-lint yamllin
+          pip install ansible-lint yamllint
 
-      - name: Run yamllin
+      - name: Run yamllint
         run: yamllint .
 
-      - name: Run ansible-lin
-        run: ansible-lin
+      - name: Run ansible-lint
+        run: ansible-lint
 
   test:
-    name: Tes
-    runs-on: ubuntu-lates
+    name: Test
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         distro:
@@ -51,25 +49,24 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ansible molecule molecule-docker docker pytest pytest-
-            testinfra
+          pip install ansible molecule molecule-docker docker pytest pytest-testinfra
 
       - name: Run Molecule tests
         run: |
           cd ../
           mv ansible-role-mariadb mariadb
           cd mariadb
-          molecule tes
+          molecule test
         env:
           MOLECULE_DISTRO: ${{ matrix.distro }}
           PY_COLORS: '1'

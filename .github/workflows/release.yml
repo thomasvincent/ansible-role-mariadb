@@ -1,9 +1,7 @@
 ---
----
----
 name: Release
 
-# GitHub Actions workflow trigger
+# GitHub Actions workflow trigger definition
 on:
   push:
     tags:
@@ -12,16 +10,16 @@ on:
 jobs:
   release:
     name: Create Release
-    runs-on: ubuntu-lates
+    runs-on: ubuntu-latest
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Generate Changelog
         id: changelog
-        uses: metcalfc/changelog-generator@v4.3.1
+        uses: metcalfc/changelog-generator@v4.0.1
         with:
           myToken: ${{ secrets.GITHUB_TOKEN }}
 

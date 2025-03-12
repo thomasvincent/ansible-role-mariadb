@@ -22,13 +22,14 @@
   ansible.builtin.assert:
     that:
       - >-
-        not (mariadb_replication_enabled | bool) or 
+        not (mariadb_replication_enabled | bool) or
         mariadb_replication_role in ['master', 'slave', 'none']
       - >-
-        not (mariadb_replication_enabled | bool and 
-        mariadb_replication_role == 'slave') or mariadb_replication_master_host != ""
+        not (mariadb_replication_enabled | bool and
+        mariadb_replication_role == 'slave') or
+        mariadb_replication_master_host != ""
       - >-
-        not (mariadb_replication_enabled | bool) or 
+        not (mariadb_replication_enabled | bool) or
         mariadb_replication_password != ""
     fail_msg: "Invalid replication configuration"
   when: mariadb_replication_enabled | bool
@@ -39,7 +40,7 @@
     that:
       - not (mariadb_backup_enabled | bool) or mariadb_backup_dir != ""
       - >-
-        not (mariadb_backup_enabled | bool) or 
+        not (mariadb_backup_enabled | bool) or
         mariadb_backup_frequency in ['hourly', 'daily', 'weekly']
       - not (mariadb_backup_enabled | bool) or mariadb_backup_retention | int > 0
     fail_msg: "Invalid backup configuration"
@@ -51,11 +52,11 @@
     that:
       - not (mariadb_monitoring_enabled | bool) or mariadb_monitoring_user != ""
       - >-
-        not (mariadb_monitoring_enabled | bool) or 
+        not (mariadb_monitoring_enabled | bool) or
         mariadb_monitoring_password != ""
       - not (mariadb_exporter_enabled | bool) or mariadb_exporter_port | int > 0
       - >-
-        not (mariadb_exporter_enabled | bool) or 
+        not (mariadb_exporter_enabled | bool) or
         mariadb_exporter_port | int < 65536
     fail_msg: "Invalid monitoring configuration"
   when: mariadb_monitoring_enabled | bool
@@ -65,7 +66,7 @@
   ansible.builtin.assert:
     that:
       - >-
-        not (mariadb_tls_enabled | bool) or 
+        not (mariadb_tls_enabled | bool) or
         (mariadb_tls_cert_file != "" and mariadb_tls_key_file != "")
     fail_msg: >-
       TLS certificate and key files must be specified when TLS is enabled
@@ -78,7 +79,7 @@
       ansible.builtin.assert:
         that:
           - >-
-            mariadb_databases | map(attribute='name') | list | length == 
+            mariadb_databases | map(attribute='name') | list | length ==
             mariadb_databases | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate database names detected in mariadb_databases"
       when: mariadb_databases | length > 0
@@ -87,7 +88,7 @@
       ansible.builtin.assert:
         that:
           - >-
-            mariadb_users | map(attribute='name') | list | length == 
+            mariadb_users | map(attribute='name') | list | length ==
             mariadb_users | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate user names detected in mariadb_users"
       when: mariadb_users | length > 0
