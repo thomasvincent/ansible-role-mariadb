@@ -1,0 +1,25 @@
+---
+- name: Verify master-slave replication
+  hosts: all
+  become: true
+  tasks:
+    - name: Wait for MariaDB to be ready
+      ansible.builtin.wait_for:
+        port: 3306
+        timeout: 30
+
+    - name: Check replication status on slave
+      community.mysql.mysql_replication:
+        mode: getslave
+        login_user: root
+        login_password: "molecule_test_password"
+      register: slave_status
+      when: inventory_hostname == "mariadb-2"
+      
+    - name: Verify slave is correctly configured
+      ansible.builtin.assert:
+        that:
+          - slave_status.Slave_IO_Running == "Yes"
+          - slave_status.Slave_SQL_Running == "Yes"
+        fail_msg: "Replication is not working properly"
+      when: inventory_hostname == "mariadb-2"
