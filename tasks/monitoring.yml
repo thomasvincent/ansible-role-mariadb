@@ -7,8 +7,8 @@
     password: "{{ mariadb_monitoring_password }}"
     host: "{{ mariadb_monitoring_host }}"
     priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
-    state: presen
-    login_user: roo
+    state: present
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
   no_log: true
   when: mariadb_monitoring_enabled | bool
@@ -48,9 +48,9 @@
         name: mysql-exporter
         shell: /bin/false
         system: true
-        home: /nonexisten
+        home: /nonexistent
         create_home: false
-        state: presen
+        state: present
 
     - name: Create MySQL exporter configuration
       template:
@@ -85,6 +85,16 @@
         state: started
         enabled: true
         daemon_reload: true
+  rescue:
+    - name: Cleanup MySQL exporter download
+      file:
+        path: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-amd64.tar.gz"
+        state: absent
+  always:
+    - name: Ensure MySQL exporter service is stopped
+      systemd:
+        name: mysqld_exporter
+        state: stopped
   when: mariadb_exporter_enabled | bool
   tags: [mariadb, monitoring, prometheus]
 
