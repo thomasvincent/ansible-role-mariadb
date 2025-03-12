@@ -1,0 +1,10 @@
+# MariaDB Monitoring Configuration
+# Managed by Ansible
+
+[mysql_exporter]
+host={{ mariadb_bind_address }}
+port={{ mariadb_port }}
+user={{ mariadb_monitoring_user }}
+password={{ mariadb_monitoring_password }}
+metrics_port={{ mariadb_exporter_port }}
+collect_interval=15s

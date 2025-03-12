@@ -1,0 +1,28 @@
+---
+# Tasks for configuring MySQL databases
+
+- name: Ensure MariaDB databases exist
+  mysql_db:
+    name: "{{ item.name }}"
+    encoding: "{{ item.encoding | default('utf8mb4') }}"
+    collation: "{{ item.collation | default('utf8mb4_unicode_ci') }}"
+    state: "{{ item.state | default('present') }}"
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  with_items: "{{ mariadb_databases }}"
+  register: db_creation
+  tags: [mariadb, databases]
+
+- name: Import database dumps
+  mysql_db:
+    name: "{{ item.0.name }}"
+    state: import
+    target: "{{ item.1 }}"
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  with_subelements:
+    - "{{ mariadb_databases }}"
+    - init_scripts
+    - skip_missing: true
+  when: item.0.state | default('present') == 'present'
+  tags: [mariadb, databases, import]

@@ -1,0 +1,32 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  inventory:
+    host_vars:
+      instance:
+        mariadb_root_password: "molecule_test_password"
+        mariadb_bind_address: "0.0.0.0"
+        mariadb_databases:
+          - name: molecule_test_db
+            encoding: utf8mb4
+            collation: utf8mb4_unicode_ci
+        mariadb_users:
+          - name: molecule_test_user
+            password: molecule_test_password
+            priv: "molecule_test_db.*:ALL"
+verifier:
+  name: ansible

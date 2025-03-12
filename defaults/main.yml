@@ -1,0 +1,125 @@
+---
+# Global MariaDB configuration
+mariadb_enabled: true
+mariadb_service_state: started
+mariadb_service_enabled: true
+
+# Installation options
+mariadb_version: "10.6"
+mariadb_packages:
+  - mariadb-server
+  - mariadb-client
+  - python3-mysqldb  # For Ansible MySQL module
+mariadb_additional_packages: []
+
+# Repository configuration
+mariadb_configure_repo: true
+mariadb_repo_version: "{{ mariadb_version }}"
+mariadb_repo_keyserver: "keyserver.ubuntu.com"
+mariadb_repo_key: "0xF1656F24C74CD1D8"
+
+# Directories and file paths
+mariadb_config_dir: /etc/mysql
+mariadb_data_dir: /var/lib/mysql
+mariadb_log_dir: /var/log/mysql
+mariadb_pid_file: /var/run/mysqld/mysqld.pid
+mariadb_socket: /var/run/mysqld/mysqld.sock
+
+# Network configuration
+mariadb_bind_address: "127.0.0.1"
+mariadb_port: 3306
+mariadb_allow_remote_connections: false
+mariadb_allowed_hosts: []
+
+# Authentication
+mariadb_root_password: ""  # Must be set by user
+mariadb_users: []
+# Example user definition:
+# mariadb_users:
+#   - name: app_user
+#     password: secure_password
+#     host: localhost
+#     priv: 'app_db.*:ALL'
+#     state: present
+
+# Database setup
+mariadb_databases: []
+# Example database definition:
+# mariadb_databases:
+#   - name: app_db
+#     encoding: utf8mb4
+#     collation: utf8mb4_unicode_ci
+#     state: present
+
+# Security settings
+mariadb_secure_installation: true
+mariadb_remove_anonymous_users: true
+mariadb_remove_test_database: true
+mariadb_disallow_root_login_remotely: true
+mariadb_tls_enabled: false
+mariadb_tls_cert_file: ""
+mariadb_tls_key_file: ""
+mariadb_tls_ca_file: ""
+
+# Performance settings
+mariadb_performance_tuning_enabled: true
+mariadb_server_memory_size: "{{ (ansible_memtotal_mb * 0.3) | int }}MB"
+mariadb_innodb_buffer_pool_size: "{{ (ansible_memtotal_mb * 0.5) | int }}M"
+mariadb_max_connections: 500
+mariadb_key_buffer_size: "128M"
+mariadb_table_open_cache: 2000
+mariadb_query_cache_size: "64M"
+mariadb_query_cache_limit: "1M"
+mariadb_thread_cache_size: 8
+mariadb_join_buffer_size: "2M"
+mariadb_sort_buffer_size: "2M"
+mariadb_tmp_table_size: "64M"
+
+# InnoDB configuration
+mariadb_innodb_file_per_table: "ON"
+mariadb_innodb_flush_method: "O_DIRECT"
+mariadb_innodb_log_file_size: "256M"
+mariadb_innodb_log_buffer_size: "16M"
+mariadb_innodb_flush_log_at_trx_commit: 1
+mariadb_innodb_buffer_pool_instances: 8
+
+# Replication settings
+mariadb_replication_enabled: false
+mariadb_replication_role: none  # master, slave, or none
+mariadb_replication_master_host: ""
+mariadb_replication_user: "replicator"
+mariadb_replication_password: ""  # Must be set if replication is enabled
+mariadb_server_id: "{{ ansible_default_ipv4.address | regex_replace('\\W+', '') | int }}"
+
+# Backup configuration
+mariadb_backup_enabled: false
+mariadb_backup_dir: /var/backups/mysql
+mariadb_backup_frequency: daily  # hourly, daily, weekly
+mariadb_backup_retention: 7  # Number of backups to keep
+mariadb_backup_compression: true
+mariadb_backup_encryption_key: ""  # If empty, encryption is disabled
+
+# Monitoring configuration
+mariadb_monitoring_enabled: false
+mariadb_monitoring_user: "monitor"
+mariadb_monitoring_password: ""  # Must be set if monitoring is enabled
+mariadb_monitoring_host: "localhost"
+mariadb_exporter_enabled: false
+mariadb_exporter_version: "0.13.0"
+mariadb_exporter_port: 9104
+
+# Logging configuration
+mariadb_log_error: /var/log/mysql/error.log
+mariadb_general_log: false
+mariadb_general_log_file: /var/log/mysql/mysql.log
+mariadb_slow_query_log: true
+mariadb_slow_query_log_file: /var/log/mysql/mysql-slow.log
+mariadb_long_query_time: 2
+
+# Audit logging
+mariadb_audit_enabled: false
+mariadb_audit_log_file: /var/log/mysql/audit.log
+mariadb_audit_log_format: JSON
+
+# Disaster recovery
+mariadb_auto_restart: true

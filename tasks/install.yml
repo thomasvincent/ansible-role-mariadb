@@ -1,0 +1,66 @@
+---
+# Tasks for installing MariaDB
+
+- name: Ensure prerequisite packages are installed
+  package:
+    name: "{{ mariadb_prerequisite_packages }}"
+    state: present
+  register: package_result
+  until: package_result is success
+  retries: 3
+  delay: 5
+
+- name: Configure MariaDB repository
+  block:
+    - name: Add MariaDB APT key (Debian family)
+      apt_key:
+        keyserver: "{{ mariadb_repo_keyserver }}"
+        id: "{{ mariadb_repo_key }}"
+      when: ansible_os_family == 'Debian'
+
+    - name: Add MariaDB APT repository (Debian family)
+      apt_repository:
+        repo: "deb [arch=amd64] https://mirror.23media.com/mariadb/repo/{{ mariadb_repo_version }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} main"
+        filename: mariadb
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Add MariaDB YUM repository (RedHat family)
+      yum_repository:
+        name: mariadb
+        description: MariaDB {{ mariadb_repo_version }} repository
+        baseurl: "https://yum.mariadb.org/{{ mariadb_repo_version }}/{{ ansible_distribution | lower }}{{ ansible_distribution_major_version }}-amd64"
+        gpgkey: "https://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
+        gpgcheck: yes
+        state: present
+      when: ansible_os_family == 'RedHat'
+  when: mariadb_configure_repo | bool
+
+- name: Install MariaDB packages
+  package:
+    name: "{{ mariadb_packages + mariadb_additional_packages }}"
+    state: present
+    update_cache: yes
+  register: mariadb_package_install
+  until: mariadb_package_install is success
+  retries: 3
+  delay: 5
+
+- name: Ensure MariaDB directories exist with correct permissions
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0755'
+  with_items:
+    - "{{ mariadb_data_dir }}"
+    - "{{ mariadb_log_dir }}"
+    - "{{ mariadb_backup_dir }}"
+  when: item != ""
+
+- name: Ensure MariaDB service is started and enabled
+  service:
+    name: "{{ mariadb_service_name }}"
+    state: "{{ mariadb_service_state }}"
+    enabled: "{{ mariadb_service_enabled }}"

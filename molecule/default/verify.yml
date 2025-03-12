@@ -1,0 +1,59 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    mariadb_root_password: "molecule_test_password"
+  tasks:
+    - name: Check if MariaDB service is running
+      service_facts:
+      register: service_state
+
+    - name: Verify MariaDB service is running
+      assert:
+        that: 
+          - "'mariadb.service' in service_state.ansible_facts.services"
+          - "service_state.ansible_facts.services['mariadb.service'].state == 'running'"
+        fail_msg: "MariaDB service is not running"
+        success_msg: "MariaDB service is running"
+
+    - name: Check MariaDB port is listening
+      wait_for:
+        port: 3306
+        timeout: 5
+      register: port_check
+
+    - name: Verify MariaDB is accepting connections
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SELECT VERSION();"
+      register: mysql_running
+      ignore_errors: true
+
+    - name: Check that test database exists
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SHOW DATABASES LIKE 'molecule_test_db';"
+      register: test_db
+
+    - name: Verify test database was created
+      assert:
+        that: test_db.query_result|length > 0
+        fail_msg: "Test database 'molecule_test_db' was not created"
+        success_msg: "Test database 'molecule_test_db' was successfully created"
+
+    - name: Check that test user can connect
+      community.mysql.mysql_query:
+        login_user: molecule_test_user
+        login_password: molecule_test_password
+        login_db: molecule_test_db
+        query: "SELECT 1;"
+      register: test_user
+
+    - name: Verify test user has correct permissions
+      assert:
+        that: test_user is success
+        fail_msg: "Test user cannot connect with provided credentials"
+        success_msg: "Test user can successfully connect"
