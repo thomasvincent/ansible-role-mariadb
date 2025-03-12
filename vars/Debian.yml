@@ -1,0 +1,16 @@
+---
+# MariaDB variables specific to Debian-based systems
+
+mariadb_service_name: mariadb
+mariadb_packages:
+  - mariadb-server
+  - mariadb-client
+  - python3-pymysql
+  - python3-mysqldb
+
+mariadb_prerequisite_packages:
+  - apt-transport-https
+  - ca-certificates
+  - software-properties-common
+  - gnupg2
+  - curl

@@ -1,0 +1,39 @@
+---
+galaxy_info:
+  role_name: mariadb
+  author: Enterprise Ops Team
+  description: Enterprise-grade Ansible role for MariaDB/MySQL database management
+  company: Enterprise Inc.
+  license: MIT
+  min_ansible_version: 2.10
+  platforms:
+    - name: Ubuntu
+      versions:
+        - bionic
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+        - bullseye
+    - name: EL
+      versions:
+        - 7
+        - 8
+        - 9
+  galaxy_tags:
+    - database
+    - mariadb
+    - mysql
+    - rdbms
+    - sql
+    - db
+    - enterprise
+    - security
+    - high-availability
+    - replication
+    - backup
+    - monitoring
+
+dependencies: []

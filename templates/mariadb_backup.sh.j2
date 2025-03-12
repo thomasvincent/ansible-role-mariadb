@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# MariaDB Backup Script
+# Managed by Ansible
+#
+
+set -e
+set -o pipefail
+
+# Configuration
+BACKUP_DIR="{{ mariadb_backup_dir }}"
+MYSQL_USER="root"
+MYSQL_PASSWORD="{{ mariadb_root_password }}"
+DATE=$(date +%Y-%m-%d-%H%M%S)
+HOSTNAME=$(hostname)
+RETENTION_DAYS={{ mariadb_backup_retention }}
+BACKUP_FORMAT="{{ mariadb_backup_compression | ternary('gzip', 'plain') }}"
+{% if mariadb_backup_encryption_key != "" %}
+ENCRYPTION_KEY="{{ mariadb_backup_encryption_key }}"
+{% endif %}
+
+# Ensure backup directory exists
+mkdir -p "$BACKUP_DIR"
+
+# Get list of databases
+DATABASES=$(mysql -u$MYSQL_USER -p$MYSQL_PASSWORD -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema)")
+
+# Log start
+echo "[$DATE] Starting MariaDB backup..."
+
+# Backup each database
+for DB in $DATABASES; do
+  echo "[$DATE] Backing up database: $DB"
+  BACKUP_FILE="$BACKUP_DIR/$HOSTNAME-$DB-$DATE.sql"
+  
+  # Export database
+  mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD --single-transaction --quick --routines --triggers --events "$DB" > "$BACKUP_FILE"
+  
+  # Compress backup
+  if [ "$BACKUP_FORMAT" == "gzip" ]; then
+    gzip -f "$BACKUP_FILE"
+    BACKUP_FILE="$BACKUP_FILE.gz"
+  fi
+  
+  # Encrypt backup if key provided
+  {% if mariadb_backup_encryption_key != "" %}
+  openssl enc -aes-256-cbc -salt -in "$BACKUP_FILE" -out "$BACKUP_FILE.enc" -k "$ENCRYPTION_KEY"
+  rm -f "$BACKUP_FILE"
+  BACKUP_FILE="$BACKUP_FILE.enc"
+  {% endif %}
+  
+  # Set permissions
+  chmod 600 "$BACKUP_FILE"
+  
+  echo "[$DATE] Completed backup: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+done
+
+# Clean up old backups
+echo "[$DATE] Cleaning up backups older than $RETENTION_DAYS days..."
+find "$BACKUP_DIR" -type f -name "*.sql*" -mtime +$RETENTION_DAYS -delete
+
+echo "[$DATE] MariaDB backup completed successfully"
+exit 0
