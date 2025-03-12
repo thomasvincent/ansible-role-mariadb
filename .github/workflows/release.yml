@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0  # Needed for changelog generation
 
       - name: Lint workflow files
-        uses: reviewdog/action-yamllint@v1.10.0  # Latest version
+        uses: reviewdog/action-yamllint@v1.20.0  # Latest version
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-check
