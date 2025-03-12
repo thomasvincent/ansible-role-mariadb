@@ -1,5 +1,5 @@
 ---
-- hosts: localhost
-  remote_user: root
+- hosts: localhos
+  remote_user: roo
   roles:
     - ansible-role-mariadb

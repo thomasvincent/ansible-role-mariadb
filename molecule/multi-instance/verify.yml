@@ -11,11 +11,11 @@
     - name: Check replication status on slave
       community.mysql.mysql_replication:
         mode: getslave
-        login_user: root
+        login_user: roo
         login_password: "molecule_test_password"
       register: slave_status
       when: inventory_hostname == "mariadb-2"
-      
+
     - name: Verify slave is correctly configured
       ansible.builtin.assert:
         that:

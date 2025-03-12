@@ -4,7 +4,7 @@
 mariadb_service_name: mariadb
 mariadb_packages:
   - mariadb-server
-  - mariadb-client
+  - mariadb-clien
   - python3-pymysql
   - python3-mysqldb
 
