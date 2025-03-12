@@ -1,0 +1,43 @@
+---
+# Tasks for configuring MySQL users
+
+- name: Ensure MariaDB users exist
+  mysql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    host: "{{ item.host | default('localhost') }}"
+    priv: "{{ item.priv | default('*.*:USAGE') }}"
+    append_privs: "{{ item.append_privs | default(false) }}"
+    state: "{{ item.state | default('present') }}"
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  with_items: "{{ mariadb_users }}"
+  no_log: true
+  tags: [mariadb, users]
+
+- name: Get list of current users
+  mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    query: "SELECT User, Host FROM mysql.user;"
+  register: current_mysql_users
+  changed_when: false
+  no_log: true
+  tags: [mariadb, users]
+
+- name: Remove unauthorized users (if defined)
+  mysql_user:
+    name: "{{ item.User }}"
+    host: "{{ item.Host }}"
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  with_items: "{{ current_mysql_users.query_result }}"
+  when: 
+    - mariadb_remove_unauthorized_users is defined and mariadb_remove_unauthorized_users | bool
+    - item.User != 'root'
+    - item.User != 'debian-sys-maint'
+    - item.User != 'mysql.sys'
+    - item.User not in (mariadb_users | map(attribute='name') | list)
+  no_log: true
+  tags: [mariadb, users]

@@ -1,0 +1,41 @@
+---
+# Tasks for configuring automated backups
+
+- name: Create backup directory
+  file:
+    path: "{{ mariadb_backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+  tags: [mariadb, backup]
+
+- name: Install backup script
+  template:
+    src: mariadb_backup.sh.j2
+    dest: /usr/local/bin/mariadb_backup.sh
+    owner: root
+    group: root
+    mode: '0755'
+  tags: [mariadb, backup]
+
+- name: Configure backup cron job
+  cron:
+    name: "MariaDB backup"
+    job: "/usr/local/bin/mariadb_backup.sh > /var/log/mariadb_backup.log 2>&1"
+    user: root
+    hour: "{{ '*/1' if mariadb_backup_frequency == 'hourly' else ('1' if mariadb_backup_frequency == 'daily' else '1') }}"
+    minute: "{{ '0' if mariadb_backup_frequency != 'hourly' else '30' }}"
+    weekday: "{{ '0' if mariadb_backup_frequency == 'weekly' else '*' }}"
+    state: present
+  tags: [mariadb, backup, cron]
+
+- name: Configure backup rotation
+  cron:
+    name: "MariaDB backup rotation"
+    job: "find {{ mariadb_backup_dir }} -name '*.sql.gz' -mtime +{{ mariadb_backup_retention }} -delete"
+    user: root
+    hour: "3"
+    minute: "30"
+    state: present
+  tags: [mariadb, backup, cron]

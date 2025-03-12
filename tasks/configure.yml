@@ -1,0 +1,46 @@
+---
+# Tasks for configuring MariaDB
+
+- name: Generate MariaDB server configuration
+  template:
+    src: mariadb.cnf.j2
+    dest: "{{ mariadb_config_dir }}/mariadb.conf.d/99-ansible-managed.cnf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+  register: mariadb_config
+
+- name: Create custom configuration directories
+  file:
+    path: "{{ mariadb_config_dir }}/conf.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Verify TLS certificates exist if TLS enabled
+  block:
+    - name: Check TLS certificate files
+      stat:
+        path: "{{ item }}"
+      register: tls_cert_files
+      with_items:
+        - "{{ mariadb_tls_cert_file }}"
+        - "{{ mariadb_tls_key_file }}"
+        - "{{ mariadb_tls_ca_file }}"
+      when: item != ""
+      
+    - name: Fail if TLS files missing
+      fail:
+        msg: "TLS enabled but certificate files not found"
+      when: "mariadb_tls_enabled and (tls_cert_files.results | selectattr('stat.exists', 'equalto', false) | list | length > 0)"
+  when: mariadb_tls_enabled | bool
+
+- name: Wait for MariaDB to start
+  wait_for:
+    host: "{{ mariadb_bind_address }}"
+    port: "{{ mariadb_port }}"
+    state: started
+    timeout: 30
+  when: mariadb_config.changed

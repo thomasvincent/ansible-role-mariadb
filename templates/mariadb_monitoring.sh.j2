@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# MariaDB Monitoring Check Script
+# Managed by Ansible
+#
+
+set -e
+
+# Configuration
+MYSQL_USER="{{ mariadb_monitoring_user }}"
+MYSQL_PASSWORD="{{ mariadb_monitoring_password }}"
+HOST="{{ mariadb_bind_address }}"
+PORT="{{ mariadb_port }}"
+LOG_FILE="/var/log/mariadb_monitoring.log"
+ALERT_EMAIL="{{ mariadb_alert_email | default('root@localhost') }}"
+MAX_CONNECTIONS_THRESHOLD=80
+SLAVE_LAG_THRESHOLD=300
+
+# Check timestamp
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+echo "[$TIMESTAMP] Running MariaDB monitoring check"
+
+# Function to send alert
+send_alert() {
+  local subject="$1"
+  local message="$2"
+  echo "[$TIMESTAMP] ALERT: $subject - $message"
+  echo -e "MariaDB Alert: $subject\n\nServer: $(hostname)\nTime: $TIMESTAMP\n\n$message" | mail -s "MariaDB Alert: $subject" "$ALERT_EMAIL"
+}
+
+# Check if MariaDB is running
+if ! pgrep -f mysqld > /dev/null; then
+  send_alert "MariaDB Down" "The MariaDB service is not running on $(hostname)"
+  exit 1
+fi
+
+# Check if we can connect
+if ! mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h"$HOST" -P"$PORT" -e "SELECT 1" > /dev/null 2>&1; then
+  send_alert "Connection Failed" "Cannot connect to MariaDB server"
+  exit 1
+fi
+
+# Check connection usage
+CURRENT_CONNECTIONS=$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h"$HOST" -P"$PORT" -e "SHOW GLOBAL STATUS LIKE 'Threads_connected';" | awk 'NR==2 {print $2}')
+MAX_CONNECTIONS=$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h"$HOST" -P"$PORT" -e "SHOW VARIABLES LIKE 'max_connections';" | awk 'NR==2 {print $2}')
+CONNECTION_PERCENT=$((CURRENT_CONNECTIONS * 100 / MAX_CONNECTIONS))
+
+if [ "$CONNECTION_PERCENT" -ge "$MAX_CONNECTIONS_THRESHOLD" ]; then
+  send_alert "High Connection Usage" "Current connections: $CURRENT_CONNECTIONS / $MAX_CONNECTIONS ($CONNECTION_PERCENT%)"
+fi
+
+# Check for long-running queries
+LONG_QUERIES=$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h"$HOST" -P"$PORT" -e "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND != 'Sleep' AND TIME > 60 ORDER BY TIME DESC;" 2>/dev/null)
+if [ -n "$LONG_QUERIES" ]; then
+  send_alert "Long-Running Queries" "The following queries have been running for more than 60 seconds:\n\n$LONG_QUERIES"
+fi
+
+# Check for slave replication status
+{% if mariadb_replication_enabled | bool and mariadb_replication_role == 'slave' %}
+SLAVE_STATUS=$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h"$HOST" -P"$PORT" -e "SHOW SLAVE STATUS\G" 2>/dev/null)
+SLAVE_IO_RUNNING=$(echo "$SLAVE_STATUS" | grep "Slave_IO_Running:" | awk '{print $2}')
+SLAVE_SQL_RUNNING=$(echo "$SLAVE_STATUS" | grep "Slave_SQL_Running:" | awk '{print $2}')
+SECONDS_BEHIND_MASTER=$(echo "$SLAVE_STATUS" | grep "Seconds_Behind_Master:" | awk '{print $2}')
+
+if [ "$SLAVE_IO_RUNNING" != "Yes" ] || [ "$SLAVE_SQL_RUNNING" != "Yes" ]; then
+  send_alert "Replication Not Running" "Slave_IO_Running: $SLAVE_IO_RUNNING, Slave_SQL_Running: $SLAVE_SQL_RUNNING"
+fi
+
+if [ "$SECONDS_BEHIND_MASTER" != "NULL" ] && [ "$SECONDS_BEHIND_MASTER" -ge "$SLAVE_LAG_THRESHOLD" ]; then
+  send_alert "Replication Lag" "Slave is $SECONDS_BEHIND_MASTER seconds behind master"
+fi
+{% endif %}
+
+# Check disk space for data directory
+DATA_DIR="{{ mariadb_data_dir }}"
+DISK_USAGE=$(df -h "$DATA_DIR" | tail -1)
+DISK_PERCENT=$(echo "$DISK_USAGE" | awk '{print $5}' | tr -d '%')
+
+if [ "$DISK_PERCENT" -ge 85 ]; then
+  send_alert "Low Disk Space" "Disk space for $DATA_DIR is at $DISK_PERCENT%\n\n$DISK_USAGE"
+fi
+
+# Check InnoDB status for any errors
+INNODB_STATUS=$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h"$HOST" -P"$PORT" -e "SHOW ENGINE INNODB STATUS\G" 2>/dev/null)
+if echo "$INNODB_STATUS" | grep -i "error" | grep -v "NO ACTIVE ERROR" > /dev/null; then
+  INNODB_ERRORS=$(echo "$INNODB_STATUS" | grep -i "error" | grep -v "NO ACTIVE ERROR")
+  send_alert "InnoDB Errors" "$INNODB_ERRORS"
+fi
+
+echo "[$TIMESTAMP] Monitoring check completed successfully"
+exit 0
