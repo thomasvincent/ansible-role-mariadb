@@ -1,38 +1,60 @@
----
 name: Release
 
-# GitHub Actions workflow trigger definition
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # Required for creating releases
+      
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4  # Latest version as of now
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Needed for changelog generation
+
+      - name: Lint workflow files
+        uses: reviewdog/action-yamllint@v1.10.0  # Latest version
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-check
+          yamllint_flags: '--strict'
 
       - name: Generate Changelog
         id: changelog
-        uses: metcalfc/changelog-generator@v4.0.1
+        uses: metcalfc/changelog-generator@v4.3.1  # Latest version
         with:
-          myToken: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Tag Name
+        id: tag_name
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+          # Validate tag format
+          if [[ ! "${TAG_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Tag ${TAG_NAME} doesn't follow semantic versioning (vX.Y.Z)"
+            exit 1
+          fi
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Note: actions/create-release@v1.1.4 is the latest, but it's deprecated
+        # Switching to the recommended softprops/action-gh-release
+        uses: softprops/action-gh-release@v2.0.4  # Latest version
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ env.TAG_NAME }}
+          name: Release ${{ env.TAG_NAME }}  # Fixed from your steps.tag_name reference
           body: |
             ## Changes
             ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
+          commitish: ${{ github.sha }}
