@@ -11,9 +11,10 @@
 
     - name: Verify MariaDB service is running
       assert:
-        that: 
+        that:
           - "'mariadb.service' in service_state.ansible_facts.services"
-          - "service_state.ansible_facts.services['mariadb.service'].state == 'running'"
+          - "service_state.ansible_facts.services['mariadb.service'].state ==
+            'running'"
         fail_msg: "MariaDB service is not running"
         success_msg: "MariaDB service is running"
 
@@ -25,7 +26,7 @@
 
     - name: Verify MariaDB is accepting connections
       community.mysql.mysql_query:
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
         query: "SELECT VERSION();"
       register: mysql_running
@@ -33,7 +34,7 @@
 
     - name: Check that test database exists
       community.mysql.mysql_query:
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
         query: "SHOW DATABASES LIKE 'molecule_test_db';"
       register: test_db
@@ -44,7 +45,7 @@
         fail_msg: "Test database 'molecule_test_db' was not created"
         success_msg: "Test database 'molecule_test_db' was successfully created"
 
-    - name: Check that test user can connect
+    - name: Check that test user can connec
       community.mysql.mysql_query:
         login_user: molecule_test_user
         login_password: molecule_test_password

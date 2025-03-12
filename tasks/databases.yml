@@ -1,13 +1,13 @@
 ---
 # Tasks for configuring MySQL databases
 
-- name: Ensure MariaDB databases exist
+- name: Ensure MariaDB databases exis
   mysql_db:
     name: "{{ item.name }}"
     encoding: "{{ item.encoding | default('utf8mb4') }}"
     collation: "{{ item.collation | default('utf8mb4_unicode_ci') }}"
     state: "{{ item.state | default('present') }}"
-    login_user: root
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   with_items: "{{ mariadb_databases }}"
   register: db_creation
@@ -16,9 +16,9 @@
 - name: Import database dumps
   mysql_db:
     name: "{{ item.0.name }}"
-    state: import
+    state: impor
     target: "{{ item.1 }}"
-    login_user: root
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   with_subelements:
     - "{{ mariadb_databases }}"

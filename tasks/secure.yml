@@ -3,13 +3,13 @@
 
 - name: Set root password
   mysql_user:
-    name: root
+    name: roo
     host: "{{ item }}"
     password: "{{ mariadb_root_password }}"
     login_unix_socket: "{{ mariadb_socket }}"
-    state: present
+    state: presen
   with_items:
-    - localhost
+    - localhos
     - 127.0.0.1
     - ::1
     - "{{ ansible_hostname }}"
@@ -17,12 +17,12 @@
   no_log: true
   when: mariadb_root_password != ""
 
-- name: Create .my.cnf file for root
+- name: Create .my.cnf file for roo
   template:
     src: my.cnf.j2
     dest: /root/.my.cnf
-    owner: root
-    group: root
+    owner: roo
+    group: roo
     mode: '0600'
   no_log: true
   when: mariadb_root_password != ""
@@ -30,28 +30,28 @@
 - name: Remove anonymous users
   mysql_user:
     name: ''
-    host_all: yes
-    state: absent
-    login_user: root
+    host_all: true
+    state: absen
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_remove_anonymous_users | bool
   no_log: true
 
 - name: Remove test database
   mysql_db:
-    name: test
-    state: absent
-    login_user: root
+    name: tes
+    state: absen
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_remove_test_database | bool
   no_log: true
 
 - name: Disallow root login remotely
   mysql_user:
-    name: root
+    name: roo
     host: "{{ item }}"
-    state: absent
-    login_user: root
+    state: absen
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   with_items:
     - "{{ ansible_hostname }}"
@@ -61,7 +61,7 @@
 
 - name: Configure password validation plugin
   mysql_query:
-    login_user: root
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
     query: "INSTALL PLUGIN validate_password SONAME 'validate_password.so';"
   ignore_errors: yes  # Plugin may already be installed
@@ -69,7 +69,7 @@
 
 - name: Set password validation policy
   mysql_query:
-    login_user: root
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
     query: "SET GLOBAL validate_password_policy = 'STRONG';"
   ignore_errors: yes  # Plugin may not be installed

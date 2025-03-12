@@ -1,0 +1,23 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 80
+    level: error
+  trailing-spaces:
+    level: error
+  truthy:
+    allowed-values: ['true', 'false']
+    level: error
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    level: error
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    level: error
+  document-start:
+    present: true
+    level: error

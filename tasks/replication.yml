@@ -4,8 +4,8 @@
 - name: Configure server-id
   mysql_variables:
     variable: server_id
-    value: "{{ mariadb_server_id }}"
-    login_user: root
+value: "{{ mariadb_server_id }}"
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_replication_enabled | bool
   tags: [mariadb, replication]
@@ -15,23 +15,23 @@
     - name: Enable binary logging
       mysql_variables:
         variable: "{{ item.variable }}"
-        value: "{{ item.value }}"
-        login_user: root
+value: "{{ item.value }}"
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
       with_items:
-        - { variable: 'log_bin', value: 'ON' }
-        - { variable: 'binlog_format', value: 'ROW' }
-        - { variable: 'sync_binlog', value: '1' }
-        - { variable: 'expire_logs_days', value: '7' }
-        
+        - { variable: 'log_bin',value: 'ON' }
+        - { variable: 'binlog_format',value: 'ROW' }
+        - { variable: 'sync_binlog',value: '1' }
+        - { variable: 'expire_logs_days',value: '7' }
+
     - name: Create replication user
       mysql_user:
         name: "{{ mariadb_replication_user }}"
         password: "{{ mariadb_replication_password }}"
         host: "%"
         priv: "*.*:REPLICATION SLAVE"
-        state: present
-        login_user: root
+        state: presen
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
       no_log: true
   when: mariadb_replication_role == 'master'
@@ -42,9 +42,9 @@
     - name: Stop slave
       mysql_replication:
         mode: stopslave
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
-      
+
     - name: Configure slave to replicate from master
       mysql_replication:
         mode: changemaster
@@ -52,25 +52,26 @@
         master_user: "{{ mariadb_replication_user }}"
         master_password: "{{ mariadb_replication_password }}"
         master_port: "{{ mariadb_port }}"
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
       no_log: true
-      
+
     - name: Start slave
       mysql_replication:
         mode: startslave
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
-      
+
     - name: Check replication status
       mysql_replication:
         mode: getslave
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
       register: slave_status
-      
+
     - name: Verify slave replication is working
       debug:
-        msg: "Slave_IO_Running: {{ slave_status.Slave_IO_Running }}, Slave_SQL_Running: {{ slave_status.Slave_SQL_Running }}"
+        msg: "Slave_IO_Running: {{ slave_status.Slave_IO_Running }},
+          Slave_SQL_Running: {{ slave_status.Slave_SQL_Running }}"
   when: mariadb_replication_role == 'slave'
   tags: [mariadb, replication, slave]
