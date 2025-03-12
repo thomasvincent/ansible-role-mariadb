@@ -1,0 +1,44 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: mariadb-1
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+    pre_build_image: true
+  - name: mariadb-2
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        mariadb_root_password: "molecule_test_password"
+    host_vars:
+      mariadb-1:
+        mariadb_replication_role: master
+        mariadb_server_id: 1
+        mariadb_bind_address: "0.0.0.0"
+        mariadb_replication_enabled: true
+        mariadb_replication_user: repl_user
+        mariadb_replication_password: repl_password
+      mariadb-2:
+        mariadb_replication_role: slave
+        mariadb_server_id: 2
+        mariadb_bind_address: "0.0.0.0"
+        mariadb_replication_enabled: true
+        mariadb_replication_user: repl_user
+        mariadb_replication_password: repl_password
+        mariadb_replication_master_host: "mariadb-1"
+verifier:
+  name: ansible
