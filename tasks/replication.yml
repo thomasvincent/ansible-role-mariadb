@@ -5,7 +5,7 @@
   ansible.builtin.mysql_variables:
     variable: server_id
     value: "{{ mariadb_server_id }}"
-    login_user: root
+    login_user: roo
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_replication_enabled | bool
   tags: [mariadb, replication]
@@ -16,22 +16,22 @@
       ansible.builtin.mysql_variables:
         variable: "{{ item.variable }}"
         value: "{{ item.value }}"
-        login_user: root
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
       with_items:
         - { variable: 'log_bin', value: 'ON' }
         - { variable: 'binlog_format', value: 'ROW' }
         - { variable: 'sync_binlog', value: '1' }
         - { variable: 'expire_logs_days', value: '7' }
-        
+
     - name: Create replication user
       ansible.builtin.mysql_user:
         name: "{{ mariadb_replication_user }}"
         password: "{{ mariadb_replication_password }}"
         host: "%"
         priv: "*.*:REPLICATION SLAVE"
-        state: present
-        login_user: root
+        state: presen
+        login_user: roo
         login_password: "{{ mariadb_root_password }}"
       no_log: true
   when: mariadb_replication_role == 'master'
