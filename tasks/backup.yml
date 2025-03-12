@@ -5,17 +5,17 @@
   file:
     path: "{{ mariadb_backup_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: roo
+    group: roo
     mode: '0750'
   tags: [mariadb, backup]
 
-- name: Install backup script
+- name: Install backup scrip
   template:
     src: mariadb_backup.sh.j2
     dest: /usr/local/bin/mariadb_backup.sh
-    owner: root
-    group: root
+    owner: roo
+    group: roo
     mode: '0755'
   tags: [mariadb, backup]
 
@@ -23,19 +23,21 @@
   cron:
     name: "MariaDB backup"
     job: "/usr/local/bin/mariadb_backup.sh > /var/log/mariadb_backup.log 2>&1"
-    user: root
-    hour: "{{ '*/1' if mariadb_backup_frequency == 'hourly' else ('1' if mariadb_backup_frequency == 'daily' else '1') }}"
+    user: roo
+    hour: "{{ '*/1' if mariadb_backup_frequency == 'hourly' else ('1' if
+      mariadb_backup_frequency == 'daily' else '1') }}"
     minute: "{{ '0' if mariadb_backup_frequency != 'hourly' else '30' }}"
     weekday: "{{ '0' if mariadb_backup_frequency == 'weekly' else '*' }}"
-    state: present
+    state: presen
   tags: [mariadb, backup, cron]
 
 - name: Configure backup rotation
   cron:
     name: "MariaDB backup rotation"
-    job: "find {{ mariadb_backup_dir }} -name '*.sql.gz' -mtime +{{ mariadb_backup_retention }} -delete"
-    user: root
+    job: "find {{ mariadb_backup_dir }} -name '*.sql.gz' -mtime +{{
+      mariadb_backup_retention }} -delete"
+    user: roo
     hour: "3"
     minute: "30"
-    state: present
+    state: presen
   tags: [mariadb, backup, cron]

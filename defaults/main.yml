@@ -5,7 +5,7 @@
 mariadb_enabled: true
 # Service state (started, stopped)
 mariadb_service_state: started
-# Enable service at boot
+# Enable service at boo
 mariadb_service_enabled: true
 
 # Installation options
@@ -15,7 +15,7 @@ mariadb_version: "10.6"
 # Base packages to install
 mariadb_packages:
   - mariadb-server
-  - mariadb-client
+  - mariadb-clien
   - python3-mysqldb  # For Ansible MySQL module
 # Additional packages (empty by default)
 mariadb_additional_packages: []
@@ -52,9 +52,9 @@ mariadb_users: []
 # mariadb_users:
 #   - name: app_user
 #     password: secure_password
-#     host: localhost
+#     host: localhos
 #     priv: 'app_db.*:ALL'
-#     state: present
+#     state: presen
 
 # Database setup
 # -------------
@@ -64,7 +64,7 @@ mariadb_databases: []
 #   - name: app_db
 #     encoding: utf8mb4
 #     collation: utf8mb4_unicode_ci
-#     state: present
+#     state: presen
 
 # Security settings
 # ----------------
@@ -115,7 +115,8 @@ mariadb_replication_user: "replicator"
 # Replication password (MUST be set if replication is enabled)
 mariadb_replication_password: ""
 # Auto-generate server ID based on IP address
-mariadb_server_id: "{{ ansible_default_ipv4.address | regex_replace('\\W+', '') | int }}"
+mariadb_server_id: "{{ ansible_default_ipv4.address | regex_replace('\\W+', '')
+  | int }}"
 
 # Backup configuration
 # -------------------

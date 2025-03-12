@@ -4,8 +4,8 @@
 - name: Ensure prerequisite packages are installed
   ansible.builtin.package:
     name: "{{ mariadb_prerequisite_packages }}"
-    state: present
-  register: package_result
+    state: presen
+  register: package_resul
   until: package_result is success
   retries: 3
   delay: 5
@@ -22,25 +22,29 @@
     - name: Add MariaDB APT repository (Debian family)
       when: ansible_os_family == 'Debian'
       ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64] https://mirror.23media.com/mariadb/repo/{{ mariadb_repo_version }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} main"
+        repo: "deb [arch=amd64] https://mirror.23media.com/mariadb/repo/{{
+          mariadb_repo_version }}/{{ ansible_distribution | lower }} {{
+            ansible_distribution_release }} main"
         filename: mariadb
-        state: present
+        state: presen
 
     - name: Add MariaDB YUM repository (RedHat family)
       when: ansible_os_family == 'RedHat'
       ansible.builtin.yum_repository:
         name: mariadb
         description: "MariaDB {{ mariadb_repo_version }} repository"
-        baseurl: "https://yum.mariadb.org/{{ mariadb_repo_version }}/{{ ansible_distribution | lower }}{{ ansible_distribution_major_version }}-amd64"
+        baseurl: "https://yum.mariadb.org/{{ mariadb_repo_version }}/{{
+          ansible_distribution | lower }}{{ ansible_distribution_major_version
+            }}-amd64"
         gpgkey: "https://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
-        gpgcheck: yes
-        state: present
+        gpgcheck: true
+        state: presen
 
 - name: Install MariaDB packages
   ansible.builtin.package:
     name: "{{ mariadb_packages + mariadb_additional_packages }}"
-    state: present
-    update_cache: yes
+    state: presen
+    update_cache: true
   register: mariadb_package_install
   until: mariadb_package_install is success
   retries: 3
