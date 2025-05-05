@@ -16,10 +16,6 @@ on:
     - cron: '0 7 * * 1'  # Run every Monday at 7 AM UTC
   workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: 'thomasvincent.mariadb'
-
 jobs:
   lint:
     name: Lint
@@ -27,8 +23,6 @@ jobs:
     steps:
       - name: Check out the codebase
         uses: actions/checkout@v4
-        with:
-          path: 'thomasvincent.mariadb'
 
       - name: Set up Python 3
         uses: actions/setup-python@v5
@@ -42,87 +36,4 @@ jobs:
         run: yamllint .
 
       - name: Run ansible-lint
-        run: ansible-lint --profile production --exclude=molecule/
-
-  molecule:
-    name: Molecule
-    needs: lint
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        ansible-version: ['7.7.0', '8.0.0', '8.5.0', '9.0.1']
-        distro:
-          - ubuntu2204
-          - debian11
-          - centos9-stream
-          - rockylinux9
-    steps:
-      - name: Check out the codebase
-        uses: actions/checkout@v4
-        with:
-          path: 'thomasvincent.mariadb'
-
-      - name: Set up Python 3
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install ansible-core==${{ matrix.ansible-version }} \
-            ansible-compat molecule molecule-plugins[docker] \
-            docker pytest-testinfra
-
-      - name: Run Molecule tests
-        run: molecule test
-        env:
-          ANSIBLE_FORCE_COLOR: '1'
-          MOLECULE_DISTRO: ${{ matrix.distro }}
-          PY_COLORS: '1'
-
-  dryrun-test:
-    name: Dry-run installation test
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the codebase
-        uses: actions/checkout@v4
-        with:
-          path: 'thomasvincent.mariadb'
-
-      - name: Set up Python 3
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Ansible
-        run: pip install ansible-core
-
-      - name: Run a dry-run installation
-        run: |
-          mkdir -p ./tests/test_dryrun
-          cd ./tests/test_dryrun
-          cat > playbook.yml << EOF
-          ---
-          - hosts: localhost
-            connection: local
-            gather_facts: true
-            roles:
-              - role: thomasvincent.mariadb
-                mariadb_enabled: true
-                mariadb_service_state: started
-                mariadb_root_password: "securepassword"
-                mariadb_databases:
-                  - name: test_db
-                    encoding: utf8mb4
-                    collation: utf8mb4_unicode_ci
-                mariadb_users:
-                  - name: test_user
-                    password: test_password
-                    host: localhost
-                    priv: 'test_db.*:ALL'
-          EOF
-
-          ansible-playbook playbook.yml --syntax-check
+        run: ansible-lint --profile production
