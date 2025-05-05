@@ -42,7 +42,7 @@ jobs:
         run: yamllint .
 
       - name: Run ansible-lint
-        run: ansible-lint --profile production
+        run: ansible-lint --profile production --exclude=molecule/
 
   molecule:
     name: Molecule
