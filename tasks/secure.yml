@@ -2,14 +2,14 @@
 # Tasks for securing MariaDB installation
 
 - name: Set root password
-  mysql_user:
-    name: roo
+  community.mysql.mysql_user:
+    name: root
     host: "{{ item }}"
     password: "{{ mariadb_root_password }}"
     login_unix_socket: "{{ mariadb_socket }}"
-    state: presen
+    state: present
   with_items:
-    - localhos
+    - localhost
     - 127.0.0.1
     - ::1
     - "{{ ansible_hostname }}"
@@ -17,41 +17,41 @@
   no_log: true
   when: mariadb_root_password != ""
 
-- name: Create .my.cnf file for roo
-  template:
+- name: Create .my.cnf file for root
+  ansible.builtin.template:
     src: my.cnf.j2
     dest: /root/.my.cnf
-    owner: roo
-    group: roo
+    owner: root
+    group: root
     mode: '0600'
   no_log: true
   when: mariadb_root_password != ""
 
 - name: Remove anonymous users
-  mysql_user:
+  community.mysql.mysql_user:
     name: ''
     host_all: true
-    state: absen
-    login_user: roo
+    state: absent
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_remove_anonymous_users | bool
   no_log: true
 
 - name: Remove test database
-  mysql_db:
-    name: tes
-    state: absen
-    login_user: roo
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_remove_test_database | bool
   no_log: true
 
 - name: Disallow root login remotely
-  mysql_user:
-    name: roo
+  community.mysql.mysql_user:
+    name: root
     host: "{{ item }}"
-    state: absen
-    login_user: roo
+    state: absent
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
   with_items:
     - "{{ ansible_hostname }}"
@@ -60,17 +60,23 @@
   no_log: true
 
 - name: Configure password validation plugin
-  mysql_query:
-    login_user: roo
+  community.mysql.mysql_query:
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
     query: "INSTALL PLUGIN validate_password SONAME 'validate_password.so';"
-  ignore_errors: true  # Plugin may already be installed
   no_log: true
+  register: validate_plugin
+  failed_when: >
+    validate_plugin.failed and
+    'already exists' not in validate_plugin.msg|default('')
 
 - name: Set password validation policy
-  mysql_query:
-    login_user: roo
+  community.mysql.mysql_query:
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
     query: "SET GLOBAL validate_password_policy = 'STRONG';"
-  ignore_errors: true  # Plugin may not be installed
   no_log: true
+  register: set_policy
+  failed_when: >
+    set_policy.failed and
+    'Unknown system variable' not in set_policy.msg|default('')
