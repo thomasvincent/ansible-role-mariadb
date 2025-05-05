@@ -1,3 +1,4 @@
+---
 version: '3.8'
 
 services:
@@ -17,7 +18,8 @@ services:
       - mariadb_data:/var/lib/mysql
       - ./config/custom.cnf:/etc/mysql/mariadb.conf.d/99-custom.cnf:ro
     healthcheck:
-      test: ["CMD", "mariadb", "-u$${MARIADB_USER}", "-p$${MARIADB_PASSWORD}", "-e", "SELECT 1;"]
+      test: ["CMD", "mariadb", "-u$${MARIADB_USER}", "-p$${MARIADB_PASSWORD}",
+             "-e", "SELECT 1;"]
       interval: 10s
       timeout: 5s
       retries: 5
