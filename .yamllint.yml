@@ -31,4 +31,3 @@ rules:
   # Allow missing document start in more places
   document-start:
     level: warning
-
