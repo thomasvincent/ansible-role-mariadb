@@ -2,21 +2,23 @@
 # Tasks for configuring MariaDB replication
 
 - name: Configure server-id
-  ansible.builtin.mysql_variables:
+  community.mysql.mysql_variables:
     variable: server_id
     value: "{{ mariadb_server_id }}"
-    login_user: roo
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
   when: mariadb_replication_enabled | bool
   tags: [mariadb, replication]
 
 - name: Configure master replication settings
+  when: mariadb_replication_role == 'master'
+  tags: [mariadb, replication, master]
   block:
     - name: Enable binary logging
-      ansible.builtin.mysql_variables:
+      community.mysql.mysql_variables:
         variable: "{{ item.variable }}"
         value: "{{ item.value }}"
-        login_user: roo
+        login_user: root
         login_password: "{{ mariadb_root_password }}"
       with_items:
         - { variable: 'log_bin', value: 'ON' }
@@ -25,14 +27,12 @@
         - { variable: 'expire_logs_days', value: '7' }
 
     - name: Create replication user
-      ansible.builtin.mysql_user:
+      community.mysql.mysql_user:
         name: "{{ mariadb_replication_user }}"
         password: "{{ mariadb_replication_password }}"
         host: "%"
         priv: "*.*:REPLICATION SLAVE"
-        state: presen
-        login_user: roo
+        state: present
+        login_user: root
         login_password: "{{ mariadb_root_password }}"
       no_log: true
-  when: mariadb_replication_role == 'master'
-  tags: [mariadb, replication, master]
