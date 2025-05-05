@@ -1,0 +1,31 @@
+---
+# .ansible-lint configuration
+
+# Skip these rules
+skip_list:
+  - 'fqcn[action]'  # Allow using short module names
+  - 'name[casing]'  # Allow any casing in task names
+  - 'jinja[spacing]'  # Skip Jinja spacing issues
+  - 'command-instead-of-module'  # Skip suggestions to use modules instead of commands
+  - 'schema[meta]'  # Skip issues with meta schemas
+  - 'schema[playbook]' # Skip issues with playbook schema
+  - 'yaml[comments]'  # Skip yaml comment checks
+  - 'yaml[line-length]'  # Skip line length checks
+  - 'galaxy[no-changelog]'  # Skip changelog requirement
+  - 'no-handler'  # Skip handler naming issues
+  - 'risky-shell-pipe' # Skip shell pipe warnings
+  - 'risky-file-permissions'  # Skip file permission issues
+  - 'experimental'  # Skip all experimental rules
+
+# Custom settings
+use_default_rules: true
+verbosity: 1
+
+# Exclude these paths
+exclude_paths:
+  - .git/
+  - .github/
+  - molecule/
+  - .ansible/
+  - tests/
+  - docs/

@@ -13,4 +13,4 @@
         password: molecule_test_password
         priv: "molecule_test_db.*:ALL"
   roles:
-    - role: ansible-role-mariadb
+    - role: thomasvincent.mariadb
