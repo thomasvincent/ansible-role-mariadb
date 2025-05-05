@@ -71,7 +71,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ansible-core==${{ matrix.ansible-version }} ansible-compat molecule molecule-plugins[docker] docker pytest-testinfra
+          python -m pip install ansible-core==${{ matrix.ansible-version }} \
+            ansible-compat molecule molecule-plugins[docker] \
+            docker pytest-testinfra
 
       - name: Run Molecule tests
         run: molecule test
