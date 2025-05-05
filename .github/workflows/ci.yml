@@ -114,7 +114,7 @@ jobs:
                 mariadb_enabled: true
                 mariadb_service_state: started
                 mariadb_root_password: "securepassword"
-                mariadb_databases: 
+                mariadb_databases:
                   - name: test_db
                     encoding: utf8mb4
                     collation: utf8mb4_unicode_ci
