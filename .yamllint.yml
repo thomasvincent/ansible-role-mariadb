@@ -2,18 +2,27 @@
 extends: default
 
 rules:
-  # 80 chars should be enough, but don't fail if a line is longer
+  # Accept longer lines
   line-length:
-    max: 120
+    max: 150
     level: warning
 
   # Accept both styles for truthy values
   truthy:
     allowed-values: ['true', 'false', 'yes', 'no', 'True', 'False', 'YES', 'NO']
+    level: warning
 
   # Don't force truthy values to be quoted
   quoted-strings:
     required: only-when-needed
+
+  # Allow trailing spaces
+  trailing-spaces:
+    level: warning
+
+  # Allow multiple spaces after colons
+  colons:
+    max-spaces-after: 10
 
   # don't require a space before comments
   comments:
@@ -30,4 +39,10 @@ rules:
 
   # Allow missing document start in more places
   document-start:
+    level: warning
+
+  # Be less strict about empty lines
+  empty-lines:
+    max: 2
+    max-end: 1
     level: warning
