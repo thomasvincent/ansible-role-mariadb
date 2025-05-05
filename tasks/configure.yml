@@ -2,27 +2,28 @@
 # Tasks for configuring MariaDB
 
 - name: Generate MariaDB server configuration
-  template:
+  ansible.builtin.template:
     src: mariadb.cnf.j2
     dest: "{{ mariadb_config_dir }}/mariadb.conf.d/99-ansible-managed.cnf"
-    owner: roo
-    group: roo
+    owner: root
+    group: root
     mode: '0644'
   notify: restart mariadb
   register: mariadb_config
 
 - name: Create custom configuration directories
-  file:
+  ansible.builtin.file:
     path: "{{ mariadb_config_dir }}/conf.d"
     state: directory
-    owner: roo
-    group: roo
+    owner: root
+    group: root
     mode: '0755'
 
 - name: Verify TLS certificates exist if TLS enabled
+  when: mariadb_tls_enabled | bool
   block:
     - name: Check TLS certificate files
-      stat:
+      ansible.builtin.stat:
         path: "{{ item }}"
       register: tls_cert_files
       with_items:
@@ -32,14 +33,12 @@
       when: item != ""
 
     - name: Fail if TLS files missing
-      fail:
+      ansible.builtin.fail:
         msg: "TLS enabled but certificate files not found"
-      when: "mariadb_tls_enabled and (tls_cert_files.results |
-        selectattr('stat.exists', 'equalto', false) | list | length > 0)"
-  when: mariadb_tls_enabled | bool
+      when: "mariadb_tls_enabled and (tls_cert_files.results | selectattr('stat.exists', 'equalto', false) | list | length > 0)"
 
-- name: Wait for MariaDB to star
-  wait_for:
+- name: Wait for MariaDB to start
+  ansible.builtin.wait_for:
     host: "{{ mariadb_bind_address }}"
     port: "{{ mariadb_port }}"
     state: started
