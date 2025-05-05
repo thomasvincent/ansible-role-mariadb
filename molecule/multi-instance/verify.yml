@@ -6,29 +6,24 @@
     mariadb_root_password: "molecule_test_password"
   tasks:
     - name: Get primary status
-      community.mysql.mysql_query:
-        login_user: root
-        login_password: "{{ mariadb_root_password }}"
-        query: "SHOW MASTER STATUS;"
+      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW MASTER STATUS;"
       register: master_status
 
     - name: Verify primary status
       ansible.builtin.assert:
         that:
-          - master_status.query_result | length > 0
+          - master_status.rc == 0
         fail_msg: "Primary server not properly configured"
         success_msg: "Primary server configured correctly"
 
     - name: Check if replication user exists
-      community.mysql.mysql_query:
-        login_user: root
-        login_password: "{{ mariadb_root_password }}"
-        query: "SELECT User FROM mysql.user WHERE User = 'repl_user';"
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} -e "SELECT User FROM mysql.user WHERE User = 'repl_user';"
       register: repl_user
 
     - name: Verify replication user exists
       ansible.builtin.assert:
-        that: repl_user.query_result | length > 0
+        that: repl_user.rc == 0
         fail_msg: "Replication user not created"
         success_msg: "Replication user created successfully"
 
@@ -43,10 +38,7 @@
         seconds: 10
 
     - name: Get replica status
-      community.mysql.mysql_query:
-        login_user: root
-        login_password: "{{ mariadb_root_password }}"
-        query: "SHOW SLAVE STATUS\\G"
+      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW SLAVE STATUS\\G"
       register: slave_status
 
     - name: Debug slave status
@@ -56,16 +48,15 @@
 
     - name: Extract Slave_IO_Running and Slave_SQL_Running values
       ansible.builtin.set_fact:
-        slave_io_running: >-
-          {{ slave_status.query_result[0].Slave_IO_Running }}
-        slave_sql_running: "{{ slave_status.query_result[0].Slave_SQL_Running }}"
-      when: slave_status.query_result | length > 0
+        slave_status_output: "{{ slave_status.stdout }}"
+        slave_io_running: "{{ 'Yes' if 'Slave_IO_Running: Yes' in slave_status.stdout else 'No' }}"
+      when: slave_status.rc == 0
 
     - name: Verify replica is connected to primary
       ansible.builtin.assert:
         that:
-          - slave_status.query_result | length > 0
-          - slave_io_running == 'Yes' or slave_io_running == 'Connecting'
+          - slave_status.rc == 0
+          - "'Slave_IO_Running: Yes' in slave_status.stdout or 'Slave_IO_Running: Connecting' in slave_status.stdout"
         fail_msg: "Replica not properly connected to primary"
         success_msg: "Replica connected to primary successfully"
       # For demonstration purposes, as network may cause issues in CI
