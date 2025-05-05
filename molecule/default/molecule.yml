@@ -5,14 +5,19 @@ driver:
   name: docker
 platforms:
   - name: instance
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     privileged: true
     pre_build_image: true
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
   inventory:
@@ -20,6 +25,7 @@ provisioner:
       instance:
         mariadb_root_password: "molecule_test_password"
         mariadb_bind_address: "0.0.0.0"
+        mariadb_version: "${MOLECULE_MARIADB_VERSION:-10.6}"
         mariadb_databases:
           - name: molecule_test_db
             encoding: utf8mb4
@@ -30,3 +36,7 @@ provisioner:
             priv: "molecule_test_db.*:ALL"
 verifier:
   name: ansible
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
