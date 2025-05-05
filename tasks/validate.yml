@@ -74,6 +74,7 @@
   tags: [mariadb, validate, security]
 
 - name: Validate users and databases
+  tags: [mariadb, validate, databases, users]
   block:
     - name: Check for duplicate database names
       ansible.builtin.assert:
@@ -83,7 +84,7 @@
             mariadb_databases | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate database names detected in mariadb_databases"
       when: mariadb_databases | length > 0
-      
+    
     - name: Check for duplicate user names
       ansible.builtin.assert:
         that:
@@ -92,7 +93,6 @@
             mariadb_users | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate user names detected in mariadb_users"
       when: mariadb_users | length > 0
-  tags: [mariadb, validate, databases, users]
 
 - name: Validate performance settings
   ansible.builtin.assert:

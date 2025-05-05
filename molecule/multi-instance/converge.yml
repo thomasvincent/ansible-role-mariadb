@@ -2,7 +2,5 @@
 - name: Converge
   hosts: all
   become: true
-  tasks:
-    - name: Include MariaDB role
-      include_role:
-        name: ansible-role-mariadb
+  roles:
+    - role: thomasvincent.mariadb

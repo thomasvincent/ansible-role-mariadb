@@ -1,3 +1,4 @@
+---
 name: Release
 
 on:
@@ -12,7 +13,7 @@ jobs:
     
     permissions:
       contents: write  # Required for creating releases
-      
+    
     steps:
       - name: Check out the codebase
         uses: actions/checkout@v4  # Latest version as of now
@@ -28,7 +29,7 @@ jobs:
 
       - name: Generate Changelog
         id: changelog
-        uses: metcalfc/changelog-generator@v4.3.1  # Latest version
+        uses: metcalfc/changelog-generator@v4.6.2  # Updated version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -39,19 +40,17 @@ jobs:
           echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
           # Validate tag format
           if [[ ! "${TAG_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Tag ${TAG_NAME} doesn't follow semantic versioning (vX.Y.Z)"
+            echo "Error: Tag ${TAG_NAME} doesn't follow semver (vX.Y.Z)"
             exit 1
           fi
 
       - name: Create Release
         id: create_release
-        # Note: actions/create-release@v1.1.4 is the latest, but it's deprecated
-        # Switching to the recommended softprops/action-gh-release
-        uses: softprops/action-gh-release@v2.0.4  # Latest version
+        uses: softprops/action-gh-release@v2.2.2  # Updated version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ env.TAG_NAME }}
-          name: Release ${{ env.TAG_NAME }}  # Fixed from your steps.tag_name reference
+          name: Release ${{ env.TAG_NAME }}
           body: |
             ## Changes
             ${{ steps.changelog.outputs.changelog }}

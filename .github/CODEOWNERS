@@ -1,0 +1,11 @@
+# These owners will be the default owners for everything in the repo
+# and will be requested for review when someone opens a pull request.
+* @thomasvincent
+
+# Specific file/directory ownership
+.github/ @thomasvincent
+defaults/ @thomasvincent
+tasks/ @thomasvincent
+templates/ @thomasvincent
+vars/ @thomasvincent
+molecule/ @thomasvincent
