@@ -8,16 +8,18 @@
     - name: Check if MariaDB service is running
       ansible.builtin.service_facts:
       register: service_state
-      
+    
     - name: Get service name based on OS family
       ansible.builtin.set_fact:
-        mariadb_service_name: "{{ 'mariadb.service' if ansible_os_family == 'Debian' else 'mariadb' }}"
+        mariadb_service_name: >-
+          {{ 'mariadb.service' if ansible_os_family == 'Debian' else 'mariadb' }}
 
     - name: Verify MariaDB service is running
       ansible.builtin.assert:
         that:
           - "mariadb_service_name in service_state.ansible_facts.services"
-          - "service_state.ansible_facts.services[mariadb_service_name].state == 'running'"
+          - >-
+            service_state.ansible_facts.services[mariadb_service_name].state == 'running'
         fail_msg: "MariaDB service is not running"
         success_msg: "MariaDB service is running"
 
