@@ -6,7 +6,7 @@ galaxy_info:
   description: Enterprise-grade Ansible role for MariaDB/MySQL database management
   company: Enterprise Inc.
   license: MIT
-  min_ansible_version: 2.10
+  min_ansible_version: "2.10"
   platforms:
     - name: Ubuntu
       versions:
@@ -32,7 +32,7 @@ galaxy_info:
     - sql
     - enterprise
     - security
-    - high-availability
+    - highavailability
     - replication
     - backup
     - monitoring
