@@ -12,6 +12,8 @@ platforms:
     cgroupns_mode: host
     privileged: true
     pre_build_image: true
+    exposed_ports:
+      - "9104"
 provisioner:
   name: ansible
   config_options:
@@ -27,13 +29,18 @@ provisioner:
         mariadb_bind_address: "0.0.0.0"
         mariadb_version: "${MOLECULE_MARIADB_VERSION:-10.6}"
         mariadb_databases:
-          - name: molecule_test_db
+          - name: monitoring_test_db
             encoding: utf8mb4
             collation: utf8mb4_unicode_ci
         mariadb_users:
-          - name: molecule_test_user
-            password: molecule_test_password
-            priv: "molecule_test_db.*:ALL"
+          - name: monitoring_test_user
+            password: monitoring_test_password
+            priv: "monitoring_test_db.*:ALL"
+        mariadb_monitoring_enabled: true
+        mariadb_monitoring_user: "mysql_exporter"
+        mariadb_monitoring_password: "exporter_password"
+        mariadb_exporter_enabled: true
+        mariadb_exporter_port: 9104
 verifier:
   name: ansible
 lint: |

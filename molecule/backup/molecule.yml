@@ -27,13 +27,17 @@ provisioner:
         mariadb_bind_address: "0.0.0.0"
         mariadb_version: "${MOLECULE_MARIADB_VERSION:-10.6}"
         mariadb_databases:
-          - name: molecule_test_db
+          - name: backup_test_db
             encoding: utf8mb4
             collation: utf8mb4_unicode_ci
         mariadb_users:
-          - name: molecule_test_user
-            password: molecule_test_password
-            priv: "molecule_test_db.*:ALL"
+          - name: backup_test_user
+            password: backup_test_password
+            priv: "backup_test_db.*:ALL"
+        mariadb_backup_enabled: true
+        mariadb_backup_frequency: hourly
+        mariadb_backup_compression: true
+        mariadb_backup_retention: 3
 verifier:
   name: ansible
 lint: |

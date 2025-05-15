@@ -55,6 +55,9 @@ This role includes Docker configuration for development and testing:
 # Start MariaDB and phpMyAdmin containers
 docker-compose up -d
 
+# Test with Docker
+make test-docker
+
 # For more details, see:
 cat README.Docker.md
 ```
@@ -72,21 +75,55 @@ This role follows enterprise software engineering best practices:
 
 ## Requirements
 
-- Ansible 2.10+
-- Python 3.6+
+- Ansible 7.0.0 - 7.x (tested with 7.0.0 and 7.6.0)
+- Python 3.10+ (tested with 3.10)
 - Root or sudo access on target hosts
 
-## Supported Platforms
+## Compatibility Matrix
 
-- Ubuntu 18.04+, 20.04+, 22.04+
-- Debian 9+, 10+, 11+, 12+
-- RHEL/CentOS/Rocky Linux/AlmaLinux 7+, 8+, 9+
+### Ansible Versions
+
+| Ansible Version | Compatible | Tested    |
+|-----------------|------------|-----------|
+| 7.6.x           | ✅        | ✅        |
+| 7.0.x - 7.5.x   | ✅        | 7.0.0 ✅   |
+| 6.x.x           | ❌        | ❌        |
+| 5.x.x           | ❌        | ❌        |
+
+### Operating Systems
+
+| OS             | Version           | Status    | Tested   |
+|----------------|-------------------|-----------|----------|
+| Ubuntu         | 22.04 (Jammy)     | Supported | ✅       |
+| Ubuntu         | 20.04 (Focal)     | Supported | ✅       |
+| Ubuntu         | 18.04 (Bionic)    | Supported | ❌       |
+| Debian         | 12 (Bookworm)     | Supported | ✅       |
+| Debian         | 11 (Bullseye)     | Supported | ✅       |
+| Debian         | 10 (Buster)       | Supported | ❌       |
+| Rocky Linux    | 9.x               | Supported | ✅       |
+| Rocky Linux    | 8.x               | Supported | ✅       |
+| RHEL           | 9.x               | Supported | ❌       |
+| RHEL           | 8.x               | Supported | ❌       |
+| RHEL           | 7.x               | Supported | ❌       |
+| CentOS/Alma    | 8.x               | Supported | ❌       |
+| CentOS         | 7.x               | Supported | ❌       |
+
+### MariaDB Versions
+
+| MariaDB Version | Status    | Tested   |
+|-----------------|-----------|----------|
+| 11.x            | Supported | ✅       |
+| 10.11.x         | Supported | ✅       |
+| 10.8.x - 10.10.x| Supported | ✅ (10.8)|
+| 10.6.x - 10.7.x | Supported | ✅ (10.6)|
+| 10.5.x          | Supported | ✅       |
+| < 10.5.x        | Not Tested| ❌       |
 
 ## Quality Assurance
 
-- Comprehensive testing with Molecule across multiple Ansible versions
+- Comprehensive testing with Molecule (v6.0.2) across supported Ansible versions and platforms
 - CI/CD pipeline integration via GitHub Actions
-- Role validation and linting
+- Role validation and linting with ansible-lint (v6.22.1)
 - Compliance with Ansible best practices
 
 ## Configuration Options
@@ -95,18 +132,41 @@ See [defaults/main.yml](defaults/main.yml) for a complete list of configuration 
 
 ## Testing
 
-This role uses Molecule for testing:
+This role uses Molecule for testing multiple scenarios:
 
 ```bash
 # Install testing dependencies
-pip install molecule molecule-plugins[docker] docker pytest-testinfra
+pip install -r requirements.txt
 
-# Run default test scenario
-molecule test
+# Run all tests (incl. linting)
+make all
 
-# Test replication with multi-instance scenario
-molecule test -s multi-instance
+# Run specific test scenarios
+make molecule-test          # Default single instance
+make multi-instance-test    # Primary-replica replication
+make backup-test            # Backup functionality
+make monitoring-test        # Monitoring capabilities
+make version-matrix-test    # Tests across MariaDB versions
 ```
+
+### Testing with Docker
+
+The role includes Docker testing capabilities:
+
+```bash
+# Test basic functionality
+make docker-test
+
+# Test replication
+make docker-replication-test
+
+# Run all Docker tests
+make docker-test-all
+```
+
+### CI/CD Integration
+
+This role uses GitHub Actions for continuous integration testing. See the `.github/workflows/ci.yml` file for configuration details.
 
 ## License
 

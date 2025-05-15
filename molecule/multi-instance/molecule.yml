@@ -4,7 +4,7 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: primary-db
+  - name: primary
     image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     volumes:
@@ -12,14 +12,14 @@ platforms:
     cgroupns_mode: host
     privileged: true
     pre_build_image: true
+    exposed_ports:
+      - "3306"
+    networks:
+      - name: mariadb_replication
     groups:
       - primary
-    exposed_ports:
-      - 3306/tcp
-    published_ports:
-      - 0.0.0.0:3306:3306/tcp
 
-  - name: replica-db
+  - name: replica
     image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     volumes:
@@ -27,45 +27,50 @@ platforms:
     cgroupns_mode: host
     privileged: true
     pre_build_image: true
+    exposed_ports:
+      - "3306"
+    networks:
+      - name: mariadb_replication
     groups:
       - replica
-    exposed_ports:
-      - 3306/tcp
-    published_ports:
-      - 0.0.0.0:3307:3306/tcp
 
 provisioner:
   name: ansible
   config_options:
     defaults:
       interpreter_python: auto_silent
-      callback_whitelist: profile_tasks, timer, yaml
+      callback_enabled: profile_tasks, timer, yaml
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
   inventory:
     group_vars:
-      primary:
-        mariadb_replication_enabled: true
-        mariadb_replication_role: primary
-        mariadb_server_id: 1
-        mariadb_bind_address: "0.0.0.0"
+      all:
         mariadb_root_password: "molecule_test_password"
-        mariadb_replication_user: repl_user
-        mariadb_replication_password: repl_password
         mariadb_databases:
-          - name: replication_test
+          - name: replication_test_db
             encoding: utf8mb4
             collation: utf8mb4_unicode_ci
-      replica:
+        mariadb_users:
+          - name: replication_test_user
+            password: replication_test_password
+            priv: "replication_test_db.*:ALL"
         mariadb_replication_enabled: true
-        mariadb_replication_role: replica
-        mariadb_server_id: 2
+        mariadb_replication_user: replicator
+        mariadb_replication_password: replication_password
+      primary:
         mariadb_bind_address: "0.0.0.0"
-        mariadb_root_password: "molecule_test_password"
-        mariadb_replication_master_host: primary-db
-        mariadb_replication_user: repl_user
-        mariadb_replication_password: repl_password
+        mariadb_version: "${MOLECULE_MARIADB_VERSION:-10.6}"
+        mariadb_replication_role: master
+        mariadb_server_id: 1
+      replica:
+        mariadb_bind_address: "0.0.0.0"
+        mariadb_version: "${MOLECULE_MARIADB_VERSION:-10.6}"
+        mariadb_replication_role: slave
+        mariadb_replication_master_host: primary
+        mariadb_server_id: 2
 verifier:
   name: ansible
 lint: |
   set -e
   yamllint .
-  ansible-lint
+  ansible-lint --profile min
