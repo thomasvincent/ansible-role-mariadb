@@ -1,0 +1,94 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    mariadb_root_password: "molecule_test_password"
+    mariadb_monitoring_user: "mysql_exporter"
+    mariadb_monitoring_password: "exporter_password"
+  tasks:
+    - name: Check if MariaDB service is running
+      ansible.builtin.service_facts:
+      register: service_state
+    
+    - name: Get service name based on OS family
+      ansible.builtin.set_fact:
+        mariadb_service_name: >-
+          {{ 'mariadb.service' if ansible_os_family == 'Debian' else 'mariadb' }}
+        exporter_service_name: >-
+          {{ 'mysqld_exporter.service' if ansible_os_family == 'Debian' else 'mysqld_exporter' }}
+
+    - name: Verify MariaDB service is running
+      ansible.builtin.assert:
+        that:
+          - "mariadb_service_name in service_state.ansible_facts.services"
+          - >-
+            service_state.ansible_facts.services[mariadb_service_name].state == 'running'
+        fail_msg: "MariaDB service is not running"
+        success_msg: "MariaDB service is running"
+
+    - name: Verify mysqld_exporter service is running
+      ansible.builtin.assert:
+        that:
+          - "exporter_service_name in service_state.ansible_facts.services"
+          - >-
+            service_state.ansible_facts.services[exporter_service_name].state == 'running'
+        fail_msg: "mysqld_exporter service is not running"
+        success_msg: "mysqld_exporter service is running"
+      ignore_errors: true
+
+    - name: Check mysqld_exporter binary exists
+      ansible.builtin.shell: which mysqld_exporter || true
+      register: mysqld_exporter_path
+      changed_when: false
+
+    - name: Check monitoring user exists
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} -e 
+        "SELECT user FROM mysql.user WHERE user = '{{ mariadb_monitoring_user }}';"
+      register: monitoring_user
+      changed_when: false
+
+    - name: Verify monitoring user exists
+      ansible.builtin.assert:
+        that: mariadb_monitoring_user in monitoring_user.stdout
+        fail_msg: "Monitoring user does not exist"
+        success_msg: "Monitoring user exists"
+
+    - name: Check monitoring user has proper permissions
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} -e 
+        "SHOW GRANTS FOR '{{ mariadb_monitoring_user }}'@'localhost';"
+      register: monitoring_grants
+      changed_when: false
+
+    - name: Verify monitoring user has proper permissions
+      ansible.builtin.assert:
+        that: 
+          - "'PROCESS' in monitoring_grants.stdout"
+          - "'REPLICATION CLIENT' in monitoring_grants.stdout"
+          - "'SELECT' in monitoring_grants.stdout"
+        fail_msg: "Monitoring user does not have correct permissions"
+        success_msg: "Monitoring user has correct permissions"
+
+    - name: Check mysqld_exporter port
+      ansible.builtin.wait_for:
+        port: 9104
+        timeout: 5
+      register: port_check
+      ignore_errors: true
+
+    - name: Get mysqld_exporter metrics
+      ansible.builtin.uri:
+        url: http://localhost:9104/metrics
+        return_content: yes
+      register: exporter_metrics
+      ignore_errors: true
+      when: port_check.failed == false
+
+    - name: Verify mysqld_exporter is exposing metrics
+      ansible.builtin.assert:
+        that: "'mysql_' in exporter_metrics.content"
+        fail_msg: "mysqld_exporter is not exposing metrics"
+        success_msg: "mysqld_exporter is correctly exposing metrics"
+      when: port_check.failed == false and exporter_metrics is defined

@@ -6,19 +6,18 @@ galaxy_info:
   description: Enterprise-grade Ansible role for MariaDB/MySQL database management
   company: Enterprise Inc.
   license: MIT
-  min_ansible_version: "2.10"
+  min_ansible_version: "7.0.0"
   platforms:
     - name: Ubuntu
       versions:
-        - bionic
-        - focal
-        - jammy
+        - bionic   # 18.04
+        - focal    # 20.04
+        - jammy    # 22.04
     - name: Debian
       versions:
-        - stretch
-        - buster
-        - bullseye
-        - bookworm
+        - buster   # 10
+        - bullseye # 11
+        - bookworm # 12
     - name: EL  # Enterprise Linux (RHEL, CentOS, Rocky, Alma, etc.)
       versions:
         - 7
