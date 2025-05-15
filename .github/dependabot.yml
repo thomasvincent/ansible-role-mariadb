@@ -1,0 +1,55 @@
+---
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "ci"
+      - "dependencies"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    reviewers:
+      - "copilot-pull-request-reviewer"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for pip (Python packages)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "python"
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "copilot-pull-request-reviewer"
+    groups:
+      python-packages:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "docker"
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "copilot-pull-request-reviewer"
