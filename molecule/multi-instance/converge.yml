@@ -4,3 +4,22 @@
   become: true
   roles:
     - role: thomasvincent.mariadb
+
+# Setup test data in the primary for replication testing
+- name: Create test data on primary
+  hosts: primary
+  become: true
+  tasks:
+    - name: Create a test table
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} replication_test_db -e
+        "CREATE TABLE IF NOT EXISTS replicated_table (id INT AUTO_INCREMENT PRIMARY KEY, 
+        message VARCHAR(255), 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+      changed_when: false
+
+    - name: Insert test data
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} replication_test_db -e
+        "INSERT INTO replicated_table (message) VALUES ('replication test data');"
+      changed_when: false

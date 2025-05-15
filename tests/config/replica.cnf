@@ -1,0 +1,18 @@
+[mysqld]
+# Replication configuration
+server-id = 2
+read_only = ON
+log_slave_updates = ON
+relay_log = mysql-relay
+relay_log_purge = ON
+
+# Enable GTIDs
+gtid_mode = ON
+enforce_gtid_consistency = ON
+
+# InnoDB settings
+innodb_buffer_pool_size = 128M
+innodb_flush_log_at_trx_commit = 1
+
+# Set safe AUTO_INCREMENT settings
+innodb_autoinc_lock_mode = 2
