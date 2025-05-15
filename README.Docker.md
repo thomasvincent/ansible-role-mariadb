@@ -1,74 +1,164 @@
-# Docker Support for MariaDB Role
+# Docker Support for MariaDB Ansible Role
 
-This directory contains Docker configurations to help with development and testing of the MariaDB Ansible role.
+This Ansible role includes Docker configuration for development and testing purposes. The Docker setup allows you to quickly test the MariaDB installation without needing to provision a full virtual machine.
 
 ## Quick Start
 
-### Using Docker Compose
+### Prerequisites
 
-The easiest way to get started is with Docker Compose:
+- Docker
+- Docker Compose
+
+### Starting the Containers
 
 ```bash
-# Start the containers
+# Start MariaDB and phpMyAdmin containers
 docker-compose up -d
-
-# Check the status
-docker-compose ps
-
-# Access the MariaDB shell
-docker-compose exec mariadb mariadb -uroot -p
-
-# Stop the containers
-docker-compose down
 ```
 
-### Environment Variables
-
-Configure the deployment by setting these environment variables:
+### Accessing MariaDB
 
 ```bash
-export MARIADB_ROOT_PASSWORD=your_secure_password
-export MARIADB_DATABASE=your_database
-export MARIADB_USER=your_user
-export MARIADB_PASSWORD=your_password
+# Connect to the MariaDB server
+docker-compose exec mariadb mysql -u root -proot
 
-docker-compose up -d
+# Run a query
+docker-compose exec mariadb mysql -u root -proot -e "SHOW DATABASES;"
 ```
 
 ### Accessing phpMyAdmin
 
-The phpMyAdmin interface is available at http://localhost:8080 with the following credentials:
+Open http://localhost:8080 in your browser and log in with:
+
 - Server: mariadb
 - Username: root
-- Password: The value of MARIADB_ROOT_PASSWORD
+- Password: root (or the value of MARIADB_ROOT_PASSWORD in your environment)
 
-## Building the Docker Image
+## Configuration
 
-If you want to build and use the Docker image directly:
+### Environment Variables
+
+You can customize the Docker container by setting environment variables:
 
 ```bash
-# Build the image
-docker build -t local/mariadb:10.6 .
+# Set environment variables
+export MARIADB_ROOT_PASSWORD=secure_password
+export MARIADB_DATABASE=custom_db
+export MARIADB_USER=app_user
+export MARIADB_PASSWORD=app_password
 
-# Run a container
-docker run -d --name mariadb \
-  -p 3306:3306 \
-  -e MARIADB_ROOT_PASSWORD=secure_password \
-  -e MARIADB_DATABASE=app_db \
-  -e MARIADB_USER=app_user \
-  -e MARIADB_PASSWORD=app_password \
-  local/mariadb:10.6
+# Start with custom configuration
+docker-compose up -d
 ```
 
-## Using with Development
+Alternatively, create a `.env` file with the variables:
 
-This Docker setup is particularly useful for:
+```
+MARIADB_ROOT_PASSWORD=secure_password
+MARIADB_DATABASE=custom_db
+MARIADB_USER=app_user
+MARIADB_PASSWORD=app_password
+```
 
-1. Quickly testing changes to the MariaDB configuration
-2. Verifying application compatibility with MariaDB
-3. Developing and testing backup/restore scripts
-4. Simulating replication scenarios
+### Custom Configuration
 
-## Custom Configuration
+To use a custom MariaDB configuration:
 
-Edit the `config/custom.cnf` file to adjust MariaDB settings without rebuilding the image.
+1. Create a configuration file in the `config/` directory:
+
+```bash
+mkdir -p config
+cp templates/server.cnf.j2 config/custom.cnf
+```
+
+2. Edit `config/custom.cnf` with your desired settings
+3. Restart the containers:
+
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+## Testing
+
+### Manual Testing
+
+```bash
+# Test connection
+docker-compose exec mariadb mysqladmin -u root -proot ping
+
+# Test creating a database
+docker-compose exec mariadb mysql -u root -proot -e "CREATE DATABASE test_db;"
+
+# Test creating a user
+docker-compose exec mariadb mysql -u root -proot -e "CREATE USER 'test_user'@'%' IDENTIFIED BY 'password';"
+docker-compose exec mariadb mysql -u root -proot -e "GRANT ALL PRIVILEGES ON test_db.* TO 'test_user'@'%';"
+```
+
+### Automated Testing
+
+The Makefile includes a Docker testing target:
+
+```bash
+# Run Docker tests
+make test-docker
+```
+
+This will:
+1. Build the Docker image
+2. Start the containers
+3. Run a test query
+4. Tear down the containers
+
+## Development Workflow
+
+Use this Docker setup for efficient development:
+
+1. Make changes to your Ansible role
+2. Rebuild and test with Docker:
+
+```bash
+docker-compose down
+docker build -t mariadb-ansible-test .
+docker-compose up -d
+```
+
+3. Verify your changes:
+
+```bash
+docker-compose exec mariadb mysql -u root -proot -e "SHOW VARIABLES LIKE '%version%';"
+```
+
+## Container Structure
+
+- `/var/lib/mysql`: Database data (persisted through a Docker volume)
+- `/etc/mysql/mariadb.conf.d/99-custom.cnf`: Custom configuration
+- Port 3306: Exposed for MariaDB connections
+
+## Troubleshooting
+
+### Container Won't Start
+
+Check the logs:
+
+```bash
+docker-compose logs mariadb
+```
+
+### Connection Issues
+
+Verify network settings:
+
+```bash
+docker network ls
+docker network inspect ansible-role-mariadb_backend
+```
+
+### Data Persistence
+
+To completely reset data:
+
+```bash
+docker-compose down -v  # Removes volumes
+docker-compose up -d    # Fresh start
+```

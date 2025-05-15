@@ -1,0 +1,98 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: mariadb-105
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - mariadb_105
+
+  - name: mariadb-106
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - mariadb_106
+
+  - name: mariadb-107
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - mariadb_107
+
+  - name: mariadb-108
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - mariadb_108
+      
+  - name: mariadb-1011
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - mariadb_1011
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_enabled: profile_tasks, timer, yaml
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  inventory:
+    group_vars:
+      all:
+        mariadb_root_password: "molecule_test_password"
+        mariadb_bind_address: "0.0.0.0"
+        mariadb_databases:
+          - name: version_test_db
+            encoding: utf8mb4
+            collation: utf8mb4_unicode_ci
+        mariadb_users:
+          - name: version_test_user 
+            password: version_test_password
+            priv: "version_test_db.*:ALL"
+      mariadb_105:
+        mariadb_version: "10.5"
+      mariadb_106:
+        mariadb_version: "10.6"
+      mariadb_107:
+        mariadb_version: "10.7"
+      mariadb_108:
+        mariadb_version: "10.8"
+      mariadb_1011:
+        mariadb_version: "10.11"
+verifier:
+  name: ansible
+lint: |
+  set -e
+  yamllint .
+  ansible-lint --profile min

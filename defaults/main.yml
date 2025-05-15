@@ -15,7 +15,7 @@ mariadb_version: "10.6"
 # Base packages to install
 mariadb_packages:
   - mariadb-server
-  - mariadb-clien
+  - mariadb-client
   - python3-mysqldb  # For Ansible MySQL module
 # Additional packages (empty by default)
 mariadb_additional_packages: []

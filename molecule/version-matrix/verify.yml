@@ -1,0 +1,61 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    mariadb_root_password: "molecule_test_password"
+  tasks:
+    - name: Check if MariaDB service is running
+      ansible.builtin.service_facts:
+      register: service_state
+    
+    - name: Get service name based on OS family
+      ansible.builtin.set_fact:
+        mariadb_service_name: >-
+          {{ 'mariadb.service' if ansible_os_family == 'Debian' else 'mariadb' }}
+
+    - name: Verify MariaDB service is running
+      ansible.builtin.assert:
+        that:
+          - "mariadb_service_name in service_state.ansible_facts.services"
+          - >-
+            service_state.ansible_facts.services[mariadb_service_name].state == 'running'
+        fail_msg: "MariaDB service is not running"
+        success_msg: "MariaDB service is running"
+
+    - name: Check MariaDB version
+      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SELECT VERSION();"
+      register: mysql_version
+      changed_when: false
+
+    - name: Register expected version
+      ansible.builtin.set_fact:
+        expected_version: "{{ mariadb_version }}"
+
+    - name: Verify correct MariaDB version
+      ansible.builtin.assert:
+        that: "expected_version in mysql_version.stdout"
+        fail_msg: "Incorrect MariaDB version: {{ mysql_version.stdout_lines | join(' ') }} (expected {{ expected_version }})"
+        success_msg: "Correct MariaDB version {{ expected_version }} was installed"
+
+    - name: Check that test database exists
+      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW DATABASES LIKE 'version_test_db';"
+      register: test_db
+      changed_when: false
+
+    - name: Verify test database was created
+      ansible.builtin.assert:
+        that: "'version_test_db' in test_db.stdout"
+        fail_msg: "Test database 'version_test_db' was not created"
+        success_msg: "Test database 'version_test_db' was successfully created"
+
+    - name: Check that test user can connect
+      ansible.builtin.shell: mysql -u version_test_user -pversion_test_password version_test_db -e "SELECT 1;"
+      register: test_user
+      changed_when: false
+
+    - name: Verify test user has correct permissions
+      ansible.builtin.assert:
+        that: test_user.rc == 0
+        fail_msg: "Test user cannot connect with provided credentials"
+        success_msg: "Test user can successfully connect"

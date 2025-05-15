@@ -1,63 +1,105 @@
 ---
-- name: Verify primary setup
+- name: Verify primary
   hosts: primary
   become: true
   vars:
     mariadb_root_password: "molecule_test_password"
   tasks:
-    - name: Get primary status
-      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW MASTER STATUS;"
-      register: master_status
+    - name: Check if MariaDB service is running on primary
+      ansible.builtin.service_facts:
+      register: service_state
+    
+    - name: Get service name based on OS family
+      ansible.builtin.set_fact:
+        mariadb_service_name: >-
+          {{ 'mariadb.service' if ansible_os_family == 'Debian' else 'mariadb' }}
 
-    - name: Verify primary status
+    - name: Verify MariaDB service is running on primary
       ansible.builtin.assert:
         that:
-          - master_status.rc == 0
-        fail_msg: "Primary server not properly configured"
-        success_msg: "Primary server configured correctly"
+          - "mariadb_service_name in service_state.ansible_facts.services"
+          - >-
+            service_state.ansible_facts.services[mariadb_service_name].state == 'running'
+        fail_msg: "MariaDB service is not running on primary"
+        success_msg: "MariaDB service is running on primary"
 
-    - name: Check if replication user exists
-      ansible.builtin.shell: >
-        mysql -u root -p{{ mariadb_root_password }} -e "SELECT User FROM mysql.user WHERE User = 'repl_user';"
-      register: repl_user
+    - name: Check primary has binlog enabled
+      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW MASTER STATUS;"
+      register: master_status
+      changed_when: false
 
-    - name: Verify replication user exists
+    - name: Verify primary has binlog enabled
       ansible.builtin.assert:
-        that: repl_user.rc == 0
-        fail_msg: "Replication user not created"
-        success_msg: "Replication user created successfully"
+        that: master_status.rc == 0
+        fail_msg: "Primary does not have binary logging enabled"
+        success_msg: "Primary has binary logging correctly enabled"
 
-- name: Verify replica setup
+    - name: Get replication user grants
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} -e 
+        "SHOW GRANTS FOR '{{ mariadb_replication_user }}'@'%';"
+      register: replication_grants
+      changed_when: false
+
+    - name: Verify replication user has REPLICATION SLAVE privilege
+      ansible.builtin.assert:
+        that: "'REPLICATION SLAVE' in replication_grants.stdout"
+        fail_msg: "Replication user is missing REPLICATION SLAVE privilege"
+        success_msg: "Replication user has REPLICATION SLAVE privilege"
+
+- name: Verify replica
   hosts: replica
   become: true
   vars:
     mariadb_root_password: "molecule_test_password"
   tasks:
-    - name: Wait for replica to connect to primary
-      ansible.builtin.pause:
-        seconds: 10
-
-    - name: Get replica status
-      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW SLAVE STATUS\\G"
-      register: slave_status
-
-    - name: Debug slave status
-      ansible.builtin.debug:
-        var: slave_status
-        verbosity: 1
-
-    - name: Extract Slave_IO_Running and Slave_SQL_Running values
+    - name: Check if MariaDB service is running on replica
+      ansible.builtin.service_facts:
+      register: service_state
+    
+    - name: Get service name based on OS family
       ansible.builtin.set_fact:
-        slave_status_output: "{{ slave_status.stdout }}"
-        slave_io_running: "{{ 'Yes' if 'Slave_IO_Running: Yes' in slave_status.stdout else 'No' }}"
-      when: slave_status.rc == 0
+        mariadb_service_name: >-
+          {{ 'mariadb.service' if ansible_os_family == 'Debian' else 'mariadb' }}
+
+    - name: Verify MariaDB service is running on replica
+      ansible.builtin.assert:
+        that:
+          - "mariadb_service_name in service_state.ansible_facts.services"
+          - >-
+            service_state.ansible_facts.services[mariadb_service_name].state == 'running'
+        fail_msg: "MariaDB service is not running on replica"
+        success_msg: "MariaDB service is running on replica"
+
+    - name: Check replica status
+      ansible.builtin.shell: mysql -u root -p{{ mariadb_root_password }} -e "SHOW SLAVE STATUS\G"
+      register: slave_status
+      changed_when: false
 
     - name: Verify replica is connected to primary
       ansible.builtin.assert:
-        that:
-          - slave_status.rc == 0
-          - "'Slave_IO_Running: Yes' in slave_status.stdout or 'Slave_IO_Running: Connecting' in slave_status.stdout"
-        fail_msg: "Replica not properly connected to primary"
-        success_msg: "Replica connected to primary successfully"
-      # For demonstration purposes, as network may cause issues in CI
-      ignore_errors: true
+        that: 
+          - "'Slave_IO_Running: Yes' in slave_status.stdout or 'Replica_IO_Running: Yes' in slave_status.stdout"
+          - "'Slave_SQL_Running: Yes' in slave_status.stdout or 'Replica_SQL_Running: Yes' in slave_status.stdout"
+        fail_msg: "Replica is not correctly connected to primary"
+        success_msg: "Replica is correctly connected to primary"
+
+    - name: Wait for replication to catch up (30s max)
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Check if data replicated
+      ansible.builtin.shell: >
+        mysql -u root -p{{ mariadb_root_password }} replication_test_db -e
+        "SELECT COUNT(*) FROM replicated_table WHERE message = 'replication test data';"
+      register: replication_data
+      changed_when: false
+      retries: 6
+      delay: 5
+      until: "'1' in replication_data.stdout"
+
+    - name: Verify data was replicated
+      ansible.builtin.assert:
+        that: "'1' in replication_data.stdout"
+        fail_msg: "Data was not replicated from primary to replica"
+        success_msg: "Data was successfully replicated from primary to replica"
