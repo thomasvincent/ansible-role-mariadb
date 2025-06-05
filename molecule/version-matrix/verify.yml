@@ -8,7 +8,7 @@
     - name: Check if MariaDB service is running
       ansible.builtin.service_facts:
       register: service_state
-    
+
     - name: Get service name based on OS family
       ansible.builtin.set_fact:
         mariadb_service_name: >-
@@ -35,7 +35,9 @@
     - name: Verify correct MariaDB version
       ansible.builtin.assert:
         that: "expected_version in mysql_version.stdout"
-        fail_msg: "Incorrect MariaDB version: {{ mysql_version.stdout_lines | join(' ') }} (expected {{ expected_version }})"
+        fail_msg: >-
+          Incorrect MariaDB version: {{ mysql_version.stdout_lines | join(' ') }}
+          (expected {{ expected_version }})
         success_msg: "Correct MariaDB version {{ expected_version }} was installed"
 
     - name: Check that test database exists

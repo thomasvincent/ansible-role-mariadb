@@ -47,7 +47,7 @@ platforms:
     pre_build_image: true
     groups:
       - mariadb_108
-      
+
   - name: mariadb-1011
     image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2204}-ansible:latest"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
@@ -77,7 +77,7 @@ provisioner:
             encoding: utf8mb4
             collation: utf8mb4_unicode_ci
         mariadb_users:
-          - name: version_test_user 
+          - name: version_test_user
             password: version_test_password
             priv: "version_test_db.*:ALL"
       mariadb_105:

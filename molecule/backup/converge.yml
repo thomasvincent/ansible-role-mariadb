@@ -21,8 +21,8 @@
     - name: Create test table
       ansible.builtin.shell: >
         mysql -u root -p{{ mariadb_root_password }} backup_test_db -e
-        "CREATE TABLE IF NOT EXISTS test_table (id INT AUTO_INCREMENT PRIMARY KEY, 
-        data VARCHAR(255), 
+        "CREATE TABLE IF NOT EXISTS test_table (id INT AUTO_INCREMENT PRIMARY KEY,
+        data VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
       changed_when: false
 

@@ -32,26 +32,26 @@ echo "[$DATE] Starting MariaDB backup..."
 for DB in $DATABASES; do
   echo "[$DATE] Backing up database: $DB"
   BACKUP_FILE="$BACKUP_DIR/$HOSTNAME-$DB-$DATE.sql"
-  
+
   # Export database
   mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD --single-transaction --quick --routines --triggers --events "$DB" > "$BACKUP_FILE"
-  
+
   # Compress backup
   if [ "$BACKUP_FORMAT" == "gzip" ]; then
     gzip -f "$BACKUP_FILE"
     BACKUP_FILE="$BACKUP_FILE.gz"
   fi
-  
+
   # Encrypt backup if key provided
   {% if mariadb_backup_encryption_key != "" %}
   openssl enc -aes-256-cbc -salt -in "$BACKUP_FILE" -out "$BACKUP_FILE.enc" -k "$ENCRYPTION_KEY"
   rm -f "$BACKUP_FILE"
   BACKUP_FILE="$BACKUP_FILE.enc"
   {% endif %}
-  
+
   # Set permissions
   chmod 600 "$BACKUP_FILE"
-  
+
   echo "[$DATE] Completed backup: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
 done
 

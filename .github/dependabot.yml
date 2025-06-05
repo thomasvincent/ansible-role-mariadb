@@ -1,49 +1,180 @@
 ---
 version: 2
 updates:
-  # Maintain dependencies for GitHub Actions
+  # GitHub Actions - Daily checks for all repositories
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
     labels:
-      - "ci"
       - "dependencies"
+      - "github-actions"
     commit-message:
       prefix: "ci"
       include: "scope"
-    groups:
-      github-actions:
-        patterns:
-          - "*"
+    rebase-strategy: "auto"
 
-  # Maintain dependencies for pip (Python packages)
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    labels:
-      - "python"
-      - "dependencies"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    groups:
-      python-packages:
-        patterns:
-          - "*"
-
-  # Maintain dependencies for Docker
+  # Docker - Daily checks for all repositories
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 3
+    assignees:
+      - "thomasvincent"
     labels:
-      - "docker"
       - "dependencies"
+      - "docker"
     commit-message:
-      prefix: "chore"
+      prefix: "build(deps)"
       include: "scope"
+    rebase-strategy: "auto"
+
+  # NPM (Node.js) - Daily checks
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # Pip (Python) - Daily checks
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # Cargo (Rust) - Daily checks
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # Go modules - Daily checks
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # Bundler (Ruby) - Daily checks
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "ruby"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # Maven (Java) - Daily checks
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "java"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # Gradle (Java) - Daily checks
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "java"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"  # Python (pip)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 10
+    assignees:
+      - "thomasvincent"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    rebase-strategy: "auto"

@@ -24,12 +24,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ansible-lint==6.22.1 yamllint==1.32.0
+          pip install pre-commit ansible-lint==6.22.1 yamllint==1.32.0
 
-      - name: Run linting
+      - name: Run pre-commit checks
         run: |
-          yamllint .
-          ansible-lint --profile min
+          pre-commit install
+          pre-commit run --all-files --show-diff-on-failure
 
   molecule:
     name: Molecule
@@ -162,7 +162,14 @@ jobs:
           mkdir -p config
           touch config/custom.cnf  # Create empty file
           docker-compose up -d
-          sleep 15  # Give services time to start properly
+          # Wait for MariaDB to be ready
+          for i in {1..30}; do
+            if docker-compose exec -T mariadb mysqladmin ping -h localhost --silent; then
+              break
+            fi
+            echo "Waiting for MariaDB to be ready..."
+            sleep 2
+          done
 
       - name: Test MariaDB container
         run: |
@@ -190,11 +197,11 @@ jobs:
           echo "[mysqld]" > tests/config/primary.cnf
           echo "server-id = 1" >> tests/config/primary.cnf
           echo "log-bin = mysql-bin" >> tests/config/primary.cnf
-          
+
           echo "[mysqld]" > tests/config/replica.cnf
           echo "server-id = 2" >> tests/config/replica.cnf
           echo "read_only = ON" >> tests/config/replica.cnf
-          
+
           touch config/custom.cnf  # Create empty file
 
       - name: Build Docker images
@@ -205,7 +212,22 @@ jobs:
       - name: Start replication containers
         run: |
           docker-compose --profile test up -d mariadb-primary mariadb-replica
-          sleep 30  # Give services time to start properly and initialize replication
+          # Wait for MariaDB primary to be ready
+          for i in {1..30}; do
+            if docker-compose exec -T mariadb-primary mysqladmin ping -h localhost --silent; then
+              break
+            fi
+            echo "Waiting for MariaDB primary to be ready..."
+            sleep 2
+          done
+          # Wait for MariaDB replica to be ready
+          for i in {1..30}; do
+            if docker-compose exec -T mariadb-replica mysqladmin ping -h localhost --silent; then
+              break
+            fi
+            echo "Waiting for MariaDB replica to be ready..."
+            sleep 2
+          done
 
       - name: Test replication
         run: docker-compose --profile test run --rm test-replication

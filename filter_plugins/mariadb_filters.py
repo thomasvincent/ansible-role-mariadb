@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """Custom Jinja2 filters for the mariadb_hardened role."""
 
-class FilterModule(object):
+
+class FilterModule:
     """Custom filters for the mariadb_hardened role."""
 
     def filters(self):
@@ -11,7 +12,9 @@ class FilterModule(object):
             "normalize_mysql_privileges": self.normalize_mysql_privileges,
         }
 
-    def calculate_buffer_pool_size(self, total_memory_mb, percentage=0.5, min_size_mb=128, max_size_mb=None):
+    def calculate_buffer_pool_size(
+        self, total_memory_mb, percentage=0.5, min_size_mb=128, max_size_mb=None
+    ):
         """Calculate optimal InnoDB buffer pool size based on system memory.
 
         Args:

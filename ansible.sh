@@ -91,7 +91,7 @@ if [[ -f "tasks/validate.yml" ]]; then
             mariadb_databases | map(attribute='name') | unique | list | length
         fail_msg: "Duplicate database names detected in mariadb_databases"
       when: mariadb_databases | length > 0
-      
+
     - name: Check for duplicate user names
       ansible.builtin.assert:
         that:

@@ -8,7 +8,7 @@
     - name: Check if MariaDB service is running
       ansible.builtin.service_facts:
       register: service_state
-    
+
     - name: Get service name based on OS family
       ansible.builtin.set_fact:
         mariadb_service_name: >-
