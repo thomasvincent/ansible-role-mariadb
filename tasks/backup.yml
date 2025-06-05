@@ -24,7 +24,9 @@
     name: "MariaDB backup"
     job: "/usr/local/bin/mariadb_backup.sh > /var/log/mariadb_backup.log 2>&1"
     user: root
-    hour: "{{ '*/1' if mariadb_backup_frequency == 'hourly' else ('1' if mariadb_backup_frequency == 'daily' else '1') }}"
+    hour: >-
+      {{ '*/1' if mariadb_backup_frequency == 'hourly' else
+         ('1' if mariadb_backup_frequency == 'daily' else '1') }}
     minute: "{{ '0' if mariadb_backup_frequency != 'hourly' else '30' }}"
     weekday: "{{ '0' if mariadb_backup_frequency == 'weekly' else '*' }}"
     state: present

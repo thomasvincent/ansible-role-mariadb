@@ -10,10 +10,10 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: write  # Required for creating releases
-    
+
     steps:
       - name: Check out the codebase
         uses: actions/checkout@v4  # Latest version as of now

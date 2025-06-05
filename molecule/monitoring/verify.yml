@@ -10,7 +10,7 @@
     - name: Check if MariaDB service is running
       ansible.builtin.service_facts:
       register: service_state
-    
+
     - name: Get service name based on OS family
       ansible.builtin.set_fact:
         mariadb_service_name: >-
@@ -44,7 +44,7 @@
 
     - name: Check monitoring user exists
       ansible.builtin.shell: >
-        mysql -u root -p{{ mariadb_root_password }} -e 
+        mysql -u root -p{{ mariadb_root_password }} -e
         "SELECT user FROM mysql.user WHERE user = '{{ mariadb_monitoring_user }}';"
       register: monitoring_user
       changed_when: false
@@ -57,14 +57,14 @@
 
     - name: Check monitoring user has proper permissions
       ansible.builtin.shell: >
-        mysql -u root -p{{ mariadb_root_password }} -e 
+        mysql -u root -p{{ mariadb_root_password }} -e
         "SHOW GRANTS FOR '{{ mariadb_monitoring_user }}'@'localhost';"
       register: monitoring_grants
       changed_when: false
 
     - name: Verify monitoring user has proper permissions
       ansible.builtin.assert:
-        that: 
+        that:
           - "'PROCESS' in monitoring_grants.stdout"
           - "'REPLICATION CLIENT' in monitoring_grants.stdout"
           - "'SELECT' in monitoring_grants.stdout"

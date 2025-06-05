@@ -35,7 +35,9 @@
     - name: Fail if TLS files missing
       ansible.builtin.fail:
         msg: "TLS enabled but certificate files not found"
-      when: "mariadb_tls_enabled and (tls_cert_files.results | selectattr('stat.exists', 'equalto', false) | list | length > 0)"
+      when: >-
+        mariadb_tls_enabled and
+        (tls_cert_files.results | selectattr('stat.exists', 'equalto', false) | list | length > 0)
 
 - name: Wait for MariaDB to start
   ansible.builtin.wait_for:
