@@ -1,0 +1,33 @@
+[MESSAGES CONTROL]
+disable=C0111,E0401,R0903,C0103,W0612,W0613,R0801
+
+[FORMAT]
+max-line-length=80
+indent-string='    '
+expected-line-ending-format=LF
+
+[BASIC]
+good-names=i,j,k,ex,_,id,db,ip
+
+[DESIGN]
+max-args=10
+max-locals=15
+max-returns=6
+max-branches=12
+max-statements=50
+max-parents=7
+max-attributes=10
+min-public-methods=1
+max-public-methods=20
+
+[IMPORTS]
+known-third-party=ansible
+
+[VARIABLES]
+init-import=no
+
+[CLASSES]
+defining-attr-methods=__init__,__new__,setUp,__post_init__
+
+[EXCEPTIONS]
+overgeneral-exceptions=Exception
