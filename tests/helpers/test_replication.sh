@@ -61,7 +61,7 @@ function check_slave_status() {
   if [ $? -eq 0 ] && [ -n "$SLAVE_STATUS" ]; then
     IO_RUNNING=$(echo "$SLAVE_STATUS" | grep -E "Slave_IO_Running|Replica_IO_Running" | grep -c "Yes")
     SQL_RUNNING=$(echo "$SLAVE_STATUS" | grep -E "Slave_SQL_Running|Replica_SQL_Running" | grep -c "Yes")
-    
+
     if [ "$IO_RUNNING" -gt 0 ] && [ "$SQL_RUNNING" -gt 0 ]; then
       log_info "✅ Replica is properly connected to primary!"
       echo "$SLAVE_STATUS" | grep -E "Master_Host|Master_Port|Slave_IO_Running|Slave_SQL_Running|Seconds_Behind_Master|Last_Error|Replica_IO_Running|Replica_SQL_Running" | sed 's/^/   /'
@@ -80,31 +80,31 @@ function check_slave_status() {
 function test_replication() {
   log_info "Testing replication by creating a test table on the primary..."
   TEST_DB="repl_test_$RANDOM"
-  
+
   # Create test database and table on primary
   mysql -h "$PRIMARY_HOST" -P "$PRIMARY_PORT" -u "$USER" -p"$PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $TEST_DB;" > /dev/null 2>&1
   mysql -h "$PRIMARY_HOST" -P "$PRIMARY_PORT" -u "$USER" -p"$PASSWORD" -e "CREATE TABLE IF NOT EXISTS $TEST_DB.test (id INT PRIMARY KEY AUTO_INCREMENT, value VARCHAR(255));" > /dev/null 2>&1
   mysql -h "$PRIMARY_HOST" -P "$PRIMARY_PORT" -u "$USER" -p"$PASSWORD" -e "INSERT INTO $TEST_DB.test (value) VALUES ('test_replication_value');" > /dev/null 2>&1
-  
+
   if [ $? -ne 0 ]; then
     log_error "❌ Failed to create test data on primary!"
     return 1
   fi
-  
+
   # Wait for replication to catch up
   log_info "Waiting for replication to catch up (10s max)..."
-  for i in {1..20}; do
+  for _ in {1..20}; do
     sleep 0.5
     REPLICA_DATA=$(mysql -h "$REPLICA_HOST" -P "$REPLICA_PORT" -u "$USER" -p"$PASSWORD" -e "SELECT COUNT(*) FROM $TEST_DB.test WHERE value='test_replication_value';" 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$REPLICA_DATA" ] && [[ "$REPLICA_DATA" =~ 1 ]]; then
       log_info "✅ Data successfully replicated!"
-      
+
       # Clean up test data
       mysql -h "$PRIMARY_HOST" -P "$PRIMARY_PORT" -u "$USER" -p"$PASSWORD" -e "DROP DATABASE $TEST_DB;" > /dev/null 2>&1
       return 0
     fi
   done
-  
+
   log_error "❌ Data was not replicated to the replica within timeout!"
   return 1
 }
@@ -127,14 +127,14 @@ REPLICA_CONN_RESULT=$?
 if [ $PRIMARY_CONN_RESULT -eq 0 ] && [ $REPLICA_CONN_RESULT -eq 0 ]; then
   check_master_status
   MASTER_RESULT=$?
-  
+
   check_slave_status
   SLAVE_RESULT=$?
-  
+
   if [ $MASTER_RESULT -eq 0 ] && [ $SLAVE_RESULT -eq 0 ]; then
     test_replication
     REPL_RESULT=$?
-    
+
     if [ $REPL_RESULT -eq 0 ]; then
       log_info "✅ All replication tests passed!"
       exit 0

@@ -33,7 +33,7 @@ function test_database_exists() {
   if [ -z "$DATABASE" ] || [ "$DATABASE" = "mysql" ]; then
     return 0
   fi
-  
+
   log_info "Checking if database '$DATABASE' exists..."
   DB_EXISTS=$(mysql -h "$HOST" -P "$PORT" -u "$USER" -p"$PASSWORD" -e "SHOW DATABASES LIKE '$DATABASE';" | grep -c "$DATABASE")
   if [ "$DB_EXISTS" -gt 0 ]; then
@@ -47,12 +47,11 @@ function test_database_exists() {
 
 function test_server_status() {
   log_info "Checking server status..."
-  RESULT=$(mysql -h "$HOST" -P "$PORT" -u "$USER" -p"$PASSWORD" -e "SHOW STATUS;" 2>/dev/null)
-  if [ $? -eq 0 ]; then
+  if mysql -h "$HOST" -P "$PORT" -u "$USER" -p"$PASSWORD" -e "SHOW STATUS;" 2>/dev/null > /dev/null; then
     VERSION=$(mysql -h "$HOST" -P "$PORT" -u "$USER" -p"$PASSWORD" -e "SELECT VERSION();" 2>/dev/null | grep -v "VERSION()")
     UPTIME=$(mysql -h "$HOST" -P "$PORT" -u "$USER" -p"$PASSWORD" -e "SHOW STATUS LIKE 'Uptime';" 2>/dev/null | awk 'NR==2 {print $2}')
     THREADS=$(mysql -h "$HOST" -P "$PORT" -u "$USER" -p"$PASSWORD" -e "SHOW STATUS LIKE 'Threads_connected';" 2>/dev/null | awk 'NR==2 {print $2}')
-    
+
     log_info "✅ Server status: OK"
     log_info "   Version: $VERSION"
     log_info "   Uptime: $UPTIME seconds"
@@ -80,10 +79,10 @@ CONNECTION_RESULT=$?
 if [ $CONNECTION_RESULT -eq 0 ]; then
   test_database_exists
   DB_RESULT=$?
-  
+
   test_server_status
   STATUS_RESULT=$?
-  
+
   # Final result
   if [ $DB_RESULT -eq 0 ] && [ $STATUS_RESULT -eq 0 ]; then
     log_info "✅ All tests passed!"
