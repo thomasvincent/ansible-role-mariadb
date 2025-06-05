@@ -1,45 +1,52 @@
-.PHONY: lint test molecule-test molecule-test-all clean docs docker-test docker-replication-test
+.PHONY: help lint test molecule-test molecule-converge molecule-verify \
+	molecule-test-all multi-instance-test backup-test monitoring-test \
+	version-matrix-test docker-test docker-replication-test docker-test-all \
+	pre-commit docs clean all
 
-lint:
+help:
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
+
+lint: ## Run YAML and Ansible linting
 	yamllint .
 	ansible-lint
 
-molecule-test:
+molecule-test: ## Run default Molecule scenario
 	molecule test
 
-molecule-converge:
+molecule-converge: ## Run converge step only
 	molecule converge
 
-molecule-verify:
+molecule-verify: ## Run verify step only
 	molecule verify
 
-multi-instance-test:
+multi-instance-test: ## Run Molecule test for multi-instance scenario
 	cd molecule/multi-instance && molecule test
 
-backup-test:
+backup-test: ## Run Molecule test for backup scenario
 	cd molecule/backup && molecule test
 
-monitoring-test:
+monitoring-test: ## Run Molecule test for monitoring scenario
 	cd molecule/monitoring && molecule test
 
-version-matrix-test:
+version-matrix-test: ## Run Molecule test for version-matrix scenario
 	cd molecule/version-matrix && molecule test
 
-molecule-test-all: 
+molecule-test-all: ## Run all Molecule scenarios
 	molecule test
 	cd molecule/multi-instance && molecule test
 	cd molecule/backup && molecule test
 	cd molecule/monitoring && molecule test
 	cd molecule/version-matrix && molecule test
 
-docker-test:
+docker-test: ## Run basic Docker test with MariaDB
 	docker build -t mariadb-ansible-test .
 	docker-compose up -d
 	docker-compose exec -T mariadb mysql -u root -proot -e "SHOW DATABASES;"
 	docker-compose exec -T mariadb mysql -u root -proot -e "SELECT VERSION();"
 	docker-compose down
 
-docker-replication-test:
+docker-replication-test: ## Run Docker-based replication scenario
 	docker build -t mariadb-ansible-test .
 	docker build -t mariadb-test -f tests/Dockerfile.test .
 	docker-compose --profile test up -d mariadb-primary mariadb-replica
@@ -47,19 +54,17 @@ docker-replication-test:
 	docker-compose --profile test run test-replication
 	docker-compose --profile test down -v
 
-docker-test-all: docker-test docker-replication-test
+docker-test-all: docker-test docker-replication-test ## Run all Docker-based tests
 
-pre-commit:
+pre-commit: ## Run all pre-commit hooks
 	pre-commit run --all-files
 
-docs:
+docs: ## Generate Ansible docs
 	ansible-doc-extractor docs/generated roles/mariadb/tasks/*.yml
 
-clean:
-	rm -rf .molecule
-	rm -rf .cache
-	rm -rf __pycache__
-	docker-compose down -v || true
-	docker-compose --profile test down -v || true
+clean: ## Clean up temp files and containers
+	rm -rf .molecule .cache __pycache__
+	-docker-compose down -v
+	-docker-compose --profile test down -v
 
-all: lint molecule-test-all
+all: lint molecule-test-all ## Run linting and all Molecule tests
