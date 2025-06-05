@@ -1,28 +1,43 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Custom Ansible action plugin for MariaDB validation."""
 
 from ansible.plugins.action import ActionBase
 
+
 class ActionModule(ActionBase):
-    """Custom action plugin for MariaDB validation"""
+    """Custom action plugin to validate MariaDB configuration parameters."""
 
     def run(self, tmp=None, task_vars=None):
-        result = super(ActionModule, self).run(tmp, task_vars)
-        result['changed'] = False
-        result['failed'] = False
-        
-        # Get module args
-        root_password = self._task.args.get('root_password', '')
-        secure_install = self._task.args.get('secure_install', True)
-        
-        # Perform validation
+        """Main entry point for the action plugin.
+
+        Args:
+            tmp: Temporary path (unused).
+            task_vars: Dictionary of task variables passed by Ansible.
+
+        Returns:
+            dict: Result object with validation outcome.
+        """
+        result = super().run(tmp, task_vars)
+        result.update(changed=False, failed=False)
+
+        # Get module arguments
+        root_password = self._task.args.get("root_password", "")
+        secure_install = self._task.args.get("secure_install", True)
+
+        # Perform validations
         errors = []
-        
+
         if secure_install and not root_password:
-            errors.append("Root password must be set when secure installation is enabled")
-            
-        # Set validation result
+            errors.append(
+                "Root password must be set when secure installation is enabled"
+            )
+
+        # Report validation result
         if errors:
-            result['failed'] = True
-            result['msg'] = '; '.join(errors)
-        
+            result.update(
+                failed=True,
+                msg="; ".join(errors),
+            )
+
         return result
