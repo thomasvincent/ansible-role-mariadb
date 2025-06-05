@@ -3,29 +3,28 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-shebang-scripts-are-executable
       - id: check-yaml
         args: [--allow-multiple-documents]
-      - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: check-added-large-files
-      - id: check-json
-      - id: check-executables-have-shebangs
-      - id: check-shebang-scripts-are-executable
       - id: mixed-line-ending
         args: [--fix=lf]
+      - id: trailing-whitespace
 
   - repo: https://github.com/ansible-community/ansible-lint
     rev: v6.22.1
     hooks:
       - id: ansible-lint
-        args:
-          - --profile=min
+        args: [--profile=min]
         exclude: >
           (?x)^(
             molecule/.*
           )$
 
-  - repo: https://github.com/adrienverge/yamllint.git
+  - repo: https://github.com/adrienverge/yamllint
     rev: v1.33.0
     hooks:
       - id: yamllint
@@ -42,6 +41,7 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
+        language_version: python3
 
   - repo: https://github.com/psf/black
     rev: 23.12.1
