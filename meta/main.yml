@@ -3,37 +3,38 @@ galaxy_info:
   role_name: mariadb
   namespace: thomasvincent
   author: Thomas Vincent
-  description: Enterprise-grade Ansible role for MariaDB/MySQL database management
+  description: >
+    Enterprise-grade Ansible role for secure and scalable MariaDB/MySQL
+    database management with replication, backup, and monitoring support.
   company: Enterprise Inc.
   license: MIT
   min_ansible_version: "7.0.0"
+
   platforms:
     - name: Ubuntu
       versions:
-        - bionic   # 18.04
-        - focal    # 20.04
-        - jammy    # 22.04
+        - focal     # 20.04 – supported until April 2025
+        - jammy     # 22.04 – LTS, supported until 2027
     - name: Debian
       versions:
-        - buster   # 10
-        - bullseye # 11
-        - bookworm # 12
-    - name: EL  # Enterprise Linux (RHEL, CentOS, Rocky, Alma, etc.)
+        - bullseye  # 11 – LTS until June 2026
+        - bookworm  # 12 – stable, supported until 2028
+    - name: EL  # Enterprise Linux: RHEL, Rocky, Alma
       versions:
-        - 7
-        - 8
-        - 9
+        - "8"       # Supported until May 2029
+        - "9"       # Supported until at least 2032
+
   galaxy_tags:
+    - backup
     - database
+    - enterprise
+    - highavailability
     - mariadb
+    - monitoring
     - mysql
     - rdbms
-    - sql
-    - enterprise
-    - security
-    - highavailability
     - replication
-    - backup
-    - monitoring
+    - security
+    - sql
 
 dependencies: []
