@@ -153,18 +153,19 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./dev/Dockerfile
           push: false
           load: true
           tags: mariadb-ansible-test:latest
 
       - name: Start Docker services
         run: |
-          mkdir -p config
-          touch config/custom.cnf  # Create empty file
-          docker-compose up -d
+          mkdir -p files
+          touch files/custom.cnf  # Create empty file
+          docker-compose -f dev/docker-compose.yml up -d
           # Wait for MariaDB to be ready
           for i in {1..30}; do
-            if docker-compose exec -T mariadb mysqladmin ping -h localhost --silent; then
+            if docker-compose -f dev/docker-compose.yml exec -T mariadb mysqladmin ping -h localhost --silent; then
               break
             fi
             echo "Waiting for MariaDB to be ready..."
@@ -173,11 +174,11 @@ jobs:
 
       - name: Test MariaDB container
         run: |
-          docker-compose exec -T mariadb mysql -u root -proot -e "SHOW DATABASES;"
-          docker-compose exec -T mariadb mysql -u root -proot -e "SELECT VERSION();"
+          docker-compose -f dev/docker-compose.yml exec -T mariadb mysql -u root -proot -e "SHOW DATABASES;"
+          docker-compose -f dev/docker-compose.yml exec -T mariadb mysql -u root -proot -e "SELECT VERSION();"
 
       - name: Clean up Docker services
-        run: docker-compose down
+        run: docker-compose -f dev/docker-compose.yml down
 
   docker-replication:
     name: Docker Replication Test
@@ -202,19 +203,20 @@ jobs:
           echo "server-id = 2" >> tests/config/replica.cnf
           echo "read_only = ON" >> tests/config/replica.cnf
 
-          touch config/custom.cnf  # Create empty file
+          touch files/custom.cnf  # Create empty file
 
       - name: Build Docker images
         run: |
-          docker build -t mariadb-ansible-test .
+          docker build -t mariadb-ansible-test -f dev/Dockerfile .
           docker build -t mariadb-test -f tests/Dockerfile.test .
 
       - name: Start replication containers
         run: |
-          docker-compose --profile test up -d mariadb-primary mariadb-replica
+          docker-compose -f dev/docker-compose.yml --profile test up -d mariadb-primary mariadb-replica
           # Wait for MariaDB primary to be ready
           for i in {1..30}; do
-            if docker-compose exec -T mariadb-primary mysqladmin ping -h localhost --silent; then
+            if docker-compose -f dev/docker-compose.yml exec -T mariadb-primary \
+              mysqladmin ping -h localhost --silent; then
               break
             fi
             echo "Waiting for MariaDB primary to be ready..."
@@ -222,7 +224,8 @@ jobs:
           done
           # Wait for MariaDB replica to be ready
           for i in {1..30}; do
-            if docker-compose exec -T mariadb-replica mysqladmin ping -h localhost --silent; then
+            if docker-compose -f dev/docker-compose.yml exec -T mariadb-replica \
+              mysqladmin ping -h localhost --silent; then
               break
             fi
             echo "Waiting for MariaDB replica to be ready..."
@@ -230,7 +233,7 @@ jobs:
           done
 
       - name: Test replication
-        run: docker-compose --profile test run --rm test-replication
+        run: docker-compose -f dev/docker-compose.yml --profile test run --rm test-replication
 
       - name: Clean up Docker services
-        run: docker-compose --profile test down -v
+        run: docker-compose -f dev/docker-compose.yml --profile test down -v
