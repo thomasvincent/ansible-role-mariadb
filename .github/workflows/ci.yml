@@ -215,7 +215,8 @@ jobs:
           docker-compose -f dev/docker-compose.yml --profile test up -d mariadb-primary mariadb-replica
           # Wait for MariaDB primary to be ready
           for i in {1..30}; do
-            if docker-compose -f dev/docker-compose.yml exec -T mariadb-primary mysqladmin ping -h localhost --silent; then
+            if docker-compose -f dev/docker-compose.yml exec -T mariadb-primary \
+              mysqladmin ping -h localhost --silent; then
               break
             fi
             echo "Waiting for MariaDB primary to be ready..."
@@ -223,7 +224,8 @@ jobs:
           done
           # Wait for MariaDB replica to be ready
           for i in {1..30}; do
-            if docker-compose -f dev/docker-compose.yml exec -T mariadb-replica mysqladmin ping -h localhost --silent; then
+            if docker-compose -f dev/docker-compose.yml exec -T mariadb-replica \
+              mysqladmin ping -h localhost --silent; then
               break
             fi
             echo "Waiting for MariaDB replica to be ready..."
