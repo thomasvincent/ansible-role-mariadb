@@ -75,7 +75,7 @@ This role follows enterprise software engineering best practices:
 
 ## Requirements
 
-- Ansible 7.0.0 - 7.x (tested with 7.0.0 and 7.6.0)
+ - Ansible 9.0.0 - 9.x (tested with 9.0.0 and 9.3.0)
 - Python 3.10+ (tested with 3.10)
 - Root or sudo access on target hosts
 
@@ -85,10 +85,9 @@ This role follows enterprise software engineering best practices:
 
 | Ansible Version | Compatible | Tested    |
 |-----------------|------------|-----------|
-| 7.6.x           | ✅        | ✅        |
-| 7.0.x - 7.5.x   | ✅        | 7.0.0 ✅   |
-| 6.x.x           | ❌        | ❌        |
-| 5.x.x           | ❌        | ❌        |
+| 9.x.x           | ✅        | 9.3.0 ✅   |
+| 8.x.x           | ❌        | ❌        |
+| 7.x.x and below | ❌        | ❌        |
 
 ### Operating Systems
 

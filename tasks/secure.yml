@@ -8,7 +8,7 @@
     password: "{{ mariadb_root_password }}"
     login_unix_socket: "{{ mariadb_socket }}"
     state: present
-  with_items:
+  loop:
     - localhost
     - 127.0.0.1
     - ::1
@@ -53,7 +53,7 @@
     state: absent
     login_user: root
     login_password: "{{ mariadb_root_password }}"
-  with_items:
+  loop:
     - "{{ ansible_hostname }}"
     - "%"
   when: mariadb_disallow_root_login_remotely | bool

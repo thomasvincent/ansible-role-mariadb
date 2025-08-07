@@ -20,7 +20,7 @@
         value: "{{ item.value }}"
         login_user: root
         login_password: "{{ mariadb_root_password }}"
-      with_items:
+      loop:
         - { variable: 'log_bin', value: 'ON' }
         - { variable: 'binlog_format', value: 'ROW' }
         - { variable: 'sync_binlog', value: '1' }
