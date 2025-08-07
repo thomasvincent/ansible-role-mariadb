@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Custom Jinja2 filters for the mariadb_hardened role."""
+"""Custom Jinja2 filters for the mariadb role."""
 
 
 class FilterModule:
-    """Custom filters for the mariadb_hardened role."""
+    """Custom filters for the mariadb role."""
 
     def filters(self):
         return {
