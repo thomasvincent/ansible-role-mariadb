@@ -20,6 +20,6 @@
     target: "{{ item.1 }}"
     login_user: root
     login_password: "{{ mariadb_root_password }}"
-  loop: "{{ mariadb_databases | subelements('init_scripts', skip_missing=True) }}"
+  loop: "{{ mariadb_databases | subelements('init_scripts', skip_missing=true) }}"
   when: item.0.state | default('present') == 'present'
   tags: [mariadb, databases, import]
