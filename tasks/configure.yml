@@ -26,7 +26,7 @@
       ansible.builtin.stat:
         path: "{{ item }}"
       register: tls_cert_files
-      with_items:
+      loop:
         - "{{ mariadb_tls_cert_file }}"
         - "{{ mariadb_tls_key_file }}"
         - "{{ mariadb_tls_ca_file }}"

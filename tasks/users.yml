@@ -1,23 +1,23 @@
 ---
 # Tasks for configuring MySQL users
 
-- name: Ensure MariaDB users exis
-  mysql_user:
+- name: Ensure MariaDB users exist
+  community.mysql.mysql_user:
     name: "{{ item.name }}"
     password: "{{ item.password }}"
     host: "{{ item.host | default('localhost') }}"
     priv: "{{ item.priv | default('*.*:USAGE') }}"
     append_privs: "{{ item.append_privs | default(false) }}"
     state: "{{ item.state | default('present') }}"
-    login_user: roo
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
-  with_items: "{{ mariadb_users }}"
+  loop: "{{ mariadb_users }}"
   no_log: true
   tags: [mariadb, users]
 
 - name: Get list of current users
-  mysql_query:
-    login_user: roo
+  community.mysql.mysql_query:
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
     query: "SELECT User, Host FROM mysql.user;"
   register: current_mysql_users
@@ -26,13 +26,13 @@
   tags: [mariadb, users]
 
 - name: Remove unauthorized users (if defined)
-  mysql_user:
+  community.mysql.mysql_user:
     name: "{{ item.User }}"
     host: "{{ item.Host }}"
-    state: absen
-    login_user: roo
+    state: absent
+    login_user: root
     login_password: "{{ mariadb_root_password }}"
-  with_items: "{{ current_mysql_users.query_result }}"
+  loop: "{{ current_mysql_users.query_result }}"
   when:
     - mariadb_remove_unauthorized_users is defined and
       mariadb_remove_unauthorized_users | bool
