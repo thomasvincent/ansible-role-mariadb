@@ -2,6 +2,7 @@
 # Tasks for configuring MySQL users
 
 - name: Ensure MariaDB users exist
+  community.mysql.mysql_user:
   mysql_user:
     name: "{{ item.name }}"
     password: "{{ item.password }}"
@@ -16,6 +17,7 @@
   tags: [mariadb, users]
 
 - name: Get list of current users
+  community.mysql.mysql_query:
   mysql_query:
     login_user: root
     login_password: "{{ mariadb_root_password }}"
@@ -26,7 +28,7 @@
   tags: [mariadb, users]
 
 - name: Remove unauthorized users (if defined)
-  mysql_user:
+  community.mysql.mysql_user:
     name: "{{ item.User }}"
     host: "{{ item.Host }}"
     state: absent
