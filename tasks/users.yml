@@ -3,6 +3,7 @@
 
 - name: Ensure MariaDB users exist
   community.mysql.mysql_user:
+  mysql_user:
     name: "{{ item.name }}"
     password: "{{ item.password }}"
     host: "{{ item.host | default('localhost') }}"
@@ -17,6 +18,7 @@
 
 - name: Get list of current users
   community.mysql.mysql_query:
+  mysql_query:
     login_user: root
     login_password: "{{ mariadb_root_password }}"
     query: "SELECT User, Host FROM mysql.user;"
