@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4  # Latest version as of now
+        uses: actions/checkout@v5  # Latest version as of now
         with:
           fetch-depth: 0  # Needed for changelog generation
 

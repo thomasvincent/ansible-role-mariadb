@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -123,7 +123,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -144,7 +144,7 @@ jobs:
     needs: [molecule, supported-distros]
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -186,7 +186,7 @@ jobs:
     needs: docker
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create required directories
         run: |
