@@ -7,7 +7,7 @@ cryptography>=42.0.5
 
 # Testing dependencies
 molecule==25.9.0
-molecule-plugins[docker]==23.6.0
+molecule-plugins[docker]==25.8.12
 pytest>=8.1.1
 pytest-testinfra>=10.0.0
 ansible-lint==25.9.2
