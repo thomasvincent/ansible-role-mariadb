@@ -46,7 +46,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v2.4.1  # Updated version
+        uses: softprops/action-gh-release@v2.4.2  # Updated version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ env.TAG_NAME }}
