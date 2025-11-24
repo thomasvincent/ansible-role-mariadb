@@ -8,10 +8,22 @@ on:
   schedule:
     - cron: '0 6 * * 0'  # Run every Sunday at 6 AM UTC
 
+# Cancel previous runs on the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+
+
+# Minimal permissions by default
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-22.04
+    timeout-minutes: 15  # Prevent hung jobs
     steps:
       - name: Check out the codebase
         uses: actions/checkout@v6
@@ -34,6 +46,7 @@ jobs:
   molecule:
     name: Molecule
     runs-on: ubuntu-22.04
+    timeout-minutes: 15  # Prevent hung jobs
     needs: lint
     strategy:
       fail-fast: false
@@ -72,6 +85,7 @@ jobs:
   additional-scenarios:
     name: Additional Scenarios
     runs-on: ubuntu-22.04
+    timeout-minutes: 15  # Prevent hung jobs
     needs: molecule
     strategy:
       fail-fast: false
@@ -105,6 +119,7 @@ jobs:
   supported-distros:
     name: Test Supported Distros
     runs-on: ubuntu-22.04
+    timeout-minutes: 15  # Prevent hung jobs
     needs: lint
     strategy:
       fail-fast: false
@@ -141,6 +156,7 @@ jobs:
   docker:
     name: Docker Test
     runs-on: ubuntu-22.04
+    timeout-minutes: 15  # Prevent hung jobs
     needs: [molecule, supported-distros]
     steps:
       - name: Check out the codebase
@@ -183,6 +199,7 @@ jobs:
   docker-replication:
     name: Docker Replication Test
     runs-on: ubuntu-22.04
+    timeout-minutes: 15  # Prevent hung jobs
     needs: docker
     steps:
       - name: Check out the codebase
