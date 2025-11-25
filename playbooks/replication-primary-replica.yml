@@ -1,0 +1,140 @@
+---
+- name: Configure MariaDB Primary-Replica Replication
+  hosts: all
+  become: true
+
+  vars:
+    # Common settings
+    mariadb_root_password: "{{ vault_mariadb_root_password }}"
+    mariadb_bind_address: "0.0.0.0"
+
+    # Replication settings
+    mariadb_replication_enabled: true
+    mariadb_replication_user: replication_user
+    mariadb_replication_user_password: "{{ vault_replication_password }}"
+    mariadb_replication_ssl: true
+
+    # Performance
+    mariadb_innodb_buffer_pool_size: "4G"
+    mariadb_max_connections: 500
+
+    # Databases to replicate
+    mariadb_databases:
+      - name: app_db
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+
+    # Application users
+    mariadb_users:
+      - name: app_user
+        password: "{{ vault_app_password }}"
+        host: "192.168.1.%"
+        priv: "app_db.*:SELECT,INSERT,UPDATE,DELETE"
+
+  roles:
+    - thomasvincent.mariadb
+
+- name: Configure Primary Server
+  hosts: mariadb_primary
+  become: true
+
+  vars:
+    mariadb_server_id: 1
+    mariadb_replication_role: primary
+    mariadb_log_bin: mysql-bin
+    mariadb_binlog_format: ROW
+    mariadb_expire_logs_days: 7
+
+  tasks:
+    - name: Include MariaDB role for primary
+      ansible.builtin.include_role:
+        name: thomasvincent.mariadb
+        tasks_from: replication
+
+    - name: Get primary status
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SHOW MASTER STATUS"
+      register: primary_status
+
+    - name: Save primary status
+      ansible.builtin.set_fact:
+        primary_log_file: "{{ primary_status.query_result[0][0]['File'] }}"
+        primary_log_pos: "{{ primary_status.query_result[0][0]['Position'] }}"
+      delegate_to: localhost
+      delegate_facts: true
+
+- name: Configure Replica Servers
+  hosts: mariadb_replicas
+  become: true
+  serial: 1  # Configure replicas one at a time
+
+  vars:
+    mariadb_replication_role: replica
+    mariadb_read_only: true
+    mariadb_server_id: "{{ 10 + groups['mariadb_replicas'].index(inventory_hostname) }}"
+    mariadb_relay_log: relay-bin
+
+    # Replication settings
+    mariadb_replication_primary_host: "{{ groups['mariadb_primary'][0] }}"
+    mariadb_replication_primary_log_file: "{{ hostvars['localhost']['primary_log_file'] }}"
+    mariadb_replication_primary_log_pos: "{{ hostvars['localhost']['primary_log_pos'] }}"
+
+  tasks:
+    - name: Include MariaDB role for replica
+      ansible.builtin.include_role:
+        name: thomasvincent.mariadb
+        tasks_from: replication
+
+    - name: Verify replication status
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SHOW SLAVE STATUS"
+      register: replica_status
+
+    - name: Display replication status
+      ansible.builtin.debug:
+        msg: |
+          Replica IO Running: {{ replica_status.query_result[0][0]['Slave_IO_Running'] }}
+          Replica SQL Running: {{ replica_status.query_result[0][0]['Slave_SQL_Running'] }}
+          Seconds Behind Primary: {{ replica_status.query_result[0][0]['Seconds_Behind_Master'] }}
+
+- name: Verify Replication
+  hosts: mariadb_primary
+  become: true
+
+  tasks:
+    - name: Create test table on primary
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: |
+          CREATE DATABASE IF NOT EXISTS replication_test;
+          USE replication_test;
+          CREATE TABLE IF NOT EXISTS test_replication (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+          INSERT INTO test_replication (id) VALUES (NULL);
+
+    - name: Wait for replication
+      ansible.builtin.pause:
+        seconds: 5
+
+- name: Verify Data on Replicas
+  hosts: mariadb_replicas
+  become: true
+
+  tasks:
+    - name: Check replicated data
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SELECT COUNT(*) as count FROM replication_test.test_replication"
+      register: replica_data
+
+    - name: Display replication verification
+      ansible.builtin.debug:
+        msg: "Replication working: {{ replica_data.query_result[0][0]['count'] | int > 0 }}"
