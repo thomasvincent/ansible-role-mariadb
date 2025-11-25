@@ -1,0 +1,188 @@
+---
+- name: Deploy High Availability MariaDB Cluster
+  hosts: mariadb_cluster
+  become: true
+
+  vars:
+    # Cluster configuration
+    mariadb_cluster_enabled: true
+    mariadb_cluster_name: "production_cluster"
+    mariadb_wsrep_cluster_address: "gcomm://{{ groups['mariadb_cluster'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | join(',') }}"
+
+    # Node configuration
+    mariadb_wsrep_node_address: "{{ ansible_default_ipv4.address }}"
+    mariadb_wsrep_node_name: "{{ inventory_hostname }}"
+
+    # Basic settings
+    mariadb_root_password: "{{ vault_mariadb_root_password }}"
+    mariadb_bind_address: "0.0.0.0"
+
+    # Performance tuning for cluster
+    mariadb_innodb_buffer_pool_size: "8G"
+    mariadb_innodb_log_file_size: "512M"
+    mariadb_max_connections: 1000
+
+    # Galera specific
+    mariadb_wsrep_provider: "/usr/lib/galera/libgalera_smm.so"
+    mariadb_wsrep_sst_method: "rsync"  # or mariabackup for larger datasets
+    mariadb_wsrep_slave_threads: 4
+
+    # Databases
+    mariadb_databases:
+      - name: ha_production_db
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+
+    # Users
+    mariadb_users:
+      - name: ha_app_user
+        password: "{{ vault_ha_app_password }}"
+        host: "192.168.1.%"
+        priv: "ha_production_db.*:SELECT,INSERT,UPDATE,DELETE"
+      - name: haproxy_check
+        password: ""
+        host: "192.168.1.%"
+        priv: "*.*:USAGE"
+
+    # Backup on one node only
+    mariadb_backup_enabled: "{{ inventory_hostname == groups['mariadb_cluster'][0] }}"
+    mariadb_backup_schedule: "0 3 * * *"
+    mariadb_backup_retention_days: 14
+
+    # Monitoring
+    mariadb_monitoring_enabled: true
+    mariadb_prometheus_exporter: true
+
+  roles:
+    - thomasvincent.mariadb
+
+- name: Bootstrap First Cluster Node
+  hosts: mariadb_cluster[0]
+  become: true
+
+  tasks:
+    - name: Bootstrap cluster on first node
+      ansible.builtin.command: galera_new_cluster
+      when: mariadb_cluster_bootstrap | default(false)
+      changed_when: true
+
+    - name: Wait for cluster to start
+      ansible.builtin.wait_for:
+        port: 3306
+        delay: 5
+        timeout: 60
+
+    - name: Verify cluster status
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SHOW STATUS LIKE 'wsrep_cluster_size'"
+      register: cluster_size
+
+    - name: Display initial cluster size
+      ansible.builtin.debug:
+        msg: "Initial cluster size: {{ cluster_size.query_result[0][0]['Value'] }}"
+
+- name: Join Remaining Nodes to Cluster
+  hosts: mariadb_cluster[1:]
+  become: true
+  serial: 1  # Join nodes one at a time
+
+  tasks:
+    - name: Start MariaDB to join cluster
+      ansible.builtin.service:
+        name: mariadb
+        state: restarted
+
+    - name: Wait for node to join cluster
+      ansible.builtin.wait_for:
+        port: 3306
+        delay: 5
+        timeout: 60
+
+    - name: Verify node joined cluster
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SHOW STATUS LIKE 'wsrep_local_state_comment'"
+      register: node_state
+      until: node_state.query_result[0][0]['Value'] == 'Synced'
+      retries: 12
+      delay: 5
+
+    - name: Display node status
+      ansible.builtin.debug:
+        msg: "Node state: {{ node_state.query_result[0][0]['Value'] }}"
+
+- name: Verify Cluster Health
+  hosts: mariadb_cluster
+  become: true
+
+  tasks:
+    - name: Check cluster size
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: |
+          SHOW STATUS LIKE 'wsrep_cluster_size';
+          SHOW STATUS LIKE 'wsrep_ready';
+          SHOW STATUS LIKE 'wsrep_connected';
+      register: cluster_status
+
+    - name: Display cluster health
+      ansible.builtin.debug:
+        msg: |
+          Cluster Size: {{ cluster_status.query_result[0][0]['Value'] }}
+          Cluster Ready: {{ cluster_status.query_result[1][0]['Value'] }}
+          Connected: {{ cluster_status.query_result[2][0]['Value'] }}
+
+    - name: Verify expected cluster size
+      ansible.builtin.assert:
+        that:
+          - cluster_status.query_result[0][0]['Value'] | int == groups['mariadb_cluster'] | length
+          - cluster_status.query_result[1][0]['Value'] == 'ON'
+          - cluster_status.query_result[2][0]['Value'] == 'ON'
+        fail_msg: "Cluster is not healthy"
+        success_msg: "Cluster is healthy with {{ groups['mariadb_cluster'] | length }} nodes"
+
+- name: Test Cluster Synchronization
+  hosts: mariadb_cluster[0]
+  become: true
+
+  tasks:
+    - name: Create test data on first node
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: |
+          CREATE DATABASE IF NOT EXISTS cluster_test;
+          USE cluster_test;
+          CREATE TABLE IF NOT EXISTS sync_test (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            node VARCHAR(255),
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+          INSERT INTO sync_test (node) VALUES ('{{ inventory_hostname }}');
+
+- name: Verify Data Synchronization
+  hosts: mariadb_cluster[1:]
+  become: true
+
+  tasks:
+    - name: Wait for synchronization
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: Check synchronized data
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SELECT COUNT(*) as count FROM cluster_test.sync_test"
+      register: sync_data
+
+    - name: Verify synchronization
+      ansible.builtin.assert:
+        that:
+          - sync_data.query_result[0][0]['count'] | int > 0
+        fail_msg: "Data not synchronized"
+        success_msg: "Data successfully synchronized across cluster"
