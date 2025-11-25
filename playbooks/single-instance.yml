@@ -1,0 +1,74 @@
+---
+- name: Deploy Single MariaDB Instance
+  hosts: database_servers
+  become: true
+
+  vars:
+    # Basic configuration
+    mariadb_root_password: "{{ vault_mariadb_root_password }}"
+    mariadb_bind_address: "0.0.0.0"
+
+    # Performance tuning
+    mariadb_innodb_buffer_pool_size: "2G"
+    mariadb_max_connections: 200
+
+    # Security settings
+    mariadb_ssl_enabled: true
+    mariadb_require_ssl: true
+
+    # Databases
+    mariadb_databases:
+      - name: production_db
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+      - name: staging_db
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+
+    # Users
+    mariadb_users:
+      - name: app_user
+        password: "{{ vault_app_password }}"
+        host: "192.168.1.%"
+        priv: "production_db.*:SELECT,INSERT,UPDATE,DELETE"
+      - name: admin_user
+        password: "{{ vault_admin_password }}"
+        host: "192.168.1.10"
+        priv: "*.*:ALL,GRANT"
+
+    # Backup configuration
+    mariadb_backup_enabled: true
+    mariadb_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+    mariadb_backup_retention_days: 7
+    mariadb_backup_encryption: true
+    mariadb_backup_encryption_key: "{{ vault_backup_key }}"
+
+    # Monitoring
+    mariadb_monitoring_enabled: true
+    mariadb_prometheus_exporter: true
+
+  roles:
+    - thomasvincent.mariadb
+
+  post_tasks:
+    - name: Verify MariaDB is running
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+      check_mode: true
+      register: mariadb_status
+
+    - name: Display MariaDB status
+      ansible.builtin.debug:
+        msg: "MariaDB is {{ mariadb_status.state }}"
+
+    - name: Test database connectivity
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SELECT VERSION()"
+      register: version_check
+
+    - name: Display MariaDB version
+      ansible.builtin.debug:
+        msg: "MariaDB Version: {{ version_check.query_result[0][0]['VERSION()'] }}"
