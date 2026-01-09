@@ -11,6 +11,7 @@
     login_password: "{{ mariadb_root_password }}"
   loop: "{{ mariadb_databases }}"
   register: db_creation
+  no_log: true
   tags: [mariadb, databases]
 
 - name: Import database dumps
@@ -22,4 +23,5 @@
     login_password: "{{ mariadb_root_password }}"
   loop: "{{ mariadb_databases | subelements('init_scripts', skip_missing=true) }}"
   when: item.0.state | default('present') == 'present'
+  no_log: true
   tags: [mariadb, databases, import]

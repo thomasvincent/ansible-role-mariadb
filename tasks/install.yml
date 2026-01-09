@@ -4,8 +4,8 @@
 - name: Ensure prerequisite packages are installed
   ansible.builtin.package:
     name: "{{ mariadb_prerequisite_packages }}"
-    state: presen
-  register: package_resul
+    state: present
+  register: package_result
   until: package_result is success
   retries: 3
   delay: 5
@@ -26,7 +26,7 @@
           mariadb_repo_version }}/{{ ansible_distribution | lower }} {{
             ansible_distribution_release }} main"
         filename: mariadb
-        state: presen
+        state: present
 
     - name: Add MariaDB YUM repository (RedHat family)
       when: ansible_os_family == 'RedHat'
@@ -38,12 +38,12 @@
             }}-amd64"
         gpgkey: "https://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
         gpgcheck: true
-        state: presen
+        state: present
 
 - name: Install MariaDB packages
   ansible.builtin.package:
     name: "{{ mariadb_packages + mariadb_additional_packages }}"
-    state: presen
+    state: present
     update_cache: true
   register: mariadb_package_install
   until: mariadb_package_install is success
