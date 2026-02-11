@@ -1,0 +1,7 @@
+.git
+.github
+molecule
+tests
+__pycache__
+.ansible
+*.md

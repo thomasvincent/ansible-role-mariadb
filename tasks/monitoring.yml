@@ -89,11 +89,6 @@
       ansible.builtin.file:
         path: "/tmp/mysqld_exporter-{{ mariadb_exporter_version }}.linux-amd64.tar.gz"
         state: absent
-  always:
-    - name: Ensure MySQL exporter service is stopped
-      ansible.builtin.systemd:
-        name: mysqld_exporter
-        state: stopped
 
 - name: Install MariaDB status check script
   ansible.builtin.template:
