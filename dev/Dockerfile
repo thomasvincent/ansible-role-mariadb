@@ -1,4 +1,4 @@
-FROM mariadb:11.8
+FROM mariadb:12.2
 
 LABEL maintainer="Thomas Vincent"
 LABEL description="MariaDB with Ansible role pre-configured"
