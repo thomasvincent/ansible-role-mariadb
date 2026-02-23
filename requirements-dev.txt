@@ -4,7 +4,7 @@
 # Development dependencies
 pre-commit==4.5.1
 black==26.1.0
-isort==7.0.0
+isort==8.0.0
 mypy==1.19.1
 flake8==7.3.0
 ansible-doc-extractor==0.1.11
