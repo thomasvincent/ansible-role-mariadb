@@ -75,7 +75,7 @@ This role follows enterprise software engineering best practices:
 
 ## Requirements
 
- - Ansible 9.0.0 - 9.x (tested with 9.0.0 and 9.3.0)
+- Ansible 9.0.0 - 9.x (tested with 9.0.0 and 9.3.0)
 - Python 3.10+ (tested with 3.10)
 - Root or sudo access on target hosts
 
@@ -125,9 +125,13 @@ This role follows enterprise software engineering best practices:
 - Role validation and linting with ansible-lint (v6.22.1)
 - Compliance with Ansible best practices
 
-## Configuration Options
+## Role Variables
 
 See [defaults/main.yml](defaults/main.yml) for a complete list of configuration options and their default values.
+
+## Dependencies
+
+- community.mysql (Ansible collection)
 
 ## Testing
 
