@@ -81,3 +81,8 @@ updates:
       include: "scope"
     allow:
       - dependency-type: "all"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
